@@ -1,0 +1,147 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model Company {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  billingEmail   String
+  billingAddress String?
+  phone          String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  orders   Order[]
+  invoices Invoice[]
+
+  @@map("companies")
+}
+
+model MenuItem {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  price       Float
+  category    String
+  image       String
+  badges      Json     @default("[]")
+  available   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems OrderItem[]
+
+  @@map("menu_items")
+}
+
+model Order {
+  id                  String        @id @default(cuid())
+  orderNumber         String        @unique @default(dbgenerated())
+  companyId           String
+  employeeName        String
+  employeeEmail       String?
+  employeePhone       String?
+  department          String?
+  deliveryLocation    String
+  deliveryDate        DateTime      @default(now())
+  deliveryTime        String?
+  specialInstructions String?
+  status              OrderStatus   @default(PENDING)
+  subtotal            Float
+  tax                 Float         @default(0)
+  deliveryFee         Float         @default(0)
+  total               Float
+  paymentMethod       PaymentMethod @default(COMPANY_ACCOUNT)
+  paymentStatus       PaymentStatus @default(PENDING)
+  paidAt              DateTime?
+  invoiceId           String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  company Company     @relation(fields: [companyId], references: [id])
+  items   OrderItem[]
+  invoice Invoice?    @relation(fields: [invoiceId], references: [id])
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  quantity   Int
+  price      Float
+  notes      String?
+  menuItemId String
+  orderId    String
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+  order    Order    @relation(fields: [orderId], references: [id])
+
+  @@map("order_items")
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique @default(dbgenerated())
+  companyId     String
+  periodStart   DateTime
+  periodEnd     DateTime
+  totalAmount   Float
+  status        InvoiceStatus @default(DRAFT)
+  dueDate       DateTime
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  orders  Order[]
+
+  @@map("invoices")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  COMPANY_ACCOUNT
+  CREDIT_CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
