@@ -20,6 +20,72 @@ model Admin {
   @@map("admins")
 }
 
+enum VendorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum PremisesType {
+  HOMEBASED
+  OTHER
+}
+
+enum ScheduleMode {
+  NONE
+  RANGE
+  EVERYDAY
+  CUSTOM
+}
+
+model Vendor {
+  id                 String       @id @default(cuid())
+  email              String       @unique
+  password           String
+  businessName       String
+  slug               String       @unique
+  description        String?
+  phone              String?
+  address            String?
+  registrationNumber String?
+  premisesType       PremisesType @default(OTHER)
+  logo               String?
+  status             VendorStatus @default(PENDING)
+  /// Manual override: false = force closed even during scheduled hours.
+  isOpen             Boolean      @default(true)
+  /// When false, Open/Close ignore the schedule until Save (hours) again.
+  followSchedule     Boolean      @default(true)
+  scheduleMode       ScheduleMode @default(NONE)
+  /// RANGE mode: auto-close at this time.
+  closesAt           DateTime?
+  /// RANGE mode: auto-reopen at this time.
+  closedUntil        DateTime?
+  /// EVERYDAY mode: "HH:mm"
+  openTime           String?
+  /// EVERYDAY mode: "HH:mm"
+  closeTime          String?
+  /// CUSTOM mode: { "0"|"1"|...|"6": { open, close } | null } (0=Sun)
+  weeklyHours        Json?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  menuItems MenuItem[]
+
+  @@map("vendors")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customers")
+}
+
 model Company {
   id             String   @id @default(cuid())
   name           String   @unique
@@ -45,9 +111,11 @@ model MenuItem {
   image       String
   badges      Json     @default("[]")
   available   Boolean  @default(true)
+  vendorId    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  vendor     Vendor?     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
 
   @@map("menu_items")

@@ -21,8 +21,39 @@ export interface MenuItem {
   image: string;
   badges: string[];
   available: boolean;
+  vendorId?: string;
+  vendor?: {
+    id: string;
+    businessName: string;
+    slug: string;
+    isOpen?: boolean;
+    scheduleMode?: string | null;
+    closesAt?: string | Date | null;
+    closedUntil?: string | Date | null;
+    openTime?: string | null;
+    closeTime?: string | null;
+    weeklyHours?: unknown;
+  };
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface VendorPublic {
+  id: string;
+  businessName: string;
+  slug: string;
+  description?: string | null;
+  logo?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  isOpen?: boolean;
+  scheduleMode?: string | null;
+  closesAt?: string | Date | null;
+  closedUntil?: string | Date | null;
+  openTime?: string | null;
+  closeTime?: string | null;
+  weeklyHours?: unknown;
+  _count?: { menuItems: number };
 }
 
 export interface Company {

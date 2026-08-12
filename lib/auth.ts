@@ -5,16 +5,14 @@ import { prisma } from '@/lib/db';
 
 export const authOptions: NextAuthOptions = {
   session: {
-    // No database sessions: the Admin model has no session table, and JWTs
-    // keep the admin API routes cheap to authorise.
     strategy: 'jwt',
   },
   pages: {
-    signIn: '/admin/login',
+    signIn: '/login',
   },
   providers: [
     CredentialsProvider({
-      name: 'Admin credentials',
+      name: 'Credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
@@ -22,33 +20,64 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
 
-        const admin = await prisma.admin.findUnique({
-          where: { email: credentials.email.toLowerCase().trim() },
-        });
-        if (!admin) return null;
+        const email = credentials.email.toLowerCase().trim();
 
-        const ok = await bcrypt.compare(credentials.password, admin.password);
+        const admin = await prisma.admin.findUnique({ where: { email } });
+        if (admin) {
+          const ok = await bcrypt.compare(credentials.password, admin.password);
+          if (!ok) return null;
+          return {
+            id: admin.id,
+            email: admin.email,
+            name: admin.name ?? admin.email,
+            role: 'ADMIN',
+          };
+        }
+
+        const vendor = await prisma.vendor.findUnique({ where: { email } });
+        if (vendor) {
+          const ok = await bcrypt.compare(credentials.password, vendor.password);
+          if (!ok) return null;
+          return {
+            id: vendor.id,
+            email: vendor.email,
+            name: vendor.businessName,
+            role: 'VENDOR',
+            vendorStatus: vendor.status,
+          };
+        }
+
+        const customer = await prisma.customer.findUnique({ where: { email } });
+        if (!customer) return null;
+
+        const ok = await bcrypt.compare(credentials.password, customer.password);
         if (!ok) return null;
 
         return {
-          id: admin.id,
-          email: admin.email,
-          name: admin.name ?? admin.email,
-          role: admin.role,
+          id: customer.id,
+          email: customer.email,
+          name: customer.name ?? customer.email,
+          role: 'CUSTOMER',
         };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      // `user` is only present on the sign-in pass; persist the role onto the token.
-      if (user) token.role = (user as { role?: string }).role ?? 'ADMIN';
+      if (user) {
+        const u = user as { role?: string; vendorStatus?: string };
+        token.role = u.role ?? 'CUSTOMER';
+        if (u.vendorStatus) token.vendorStatus = u.vendorStatus;
+      }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub ?? '';
-        session.user.role = (token.role as string) ?? 'ADMIN';
+        session.user.role = (token.role as string) ?? 'CUSTOMER';
+        if (token.vendorStatus) {
+          session.user.vendorStatus = token.vendorStatus as string;
+        }
       }
       return session;
     },

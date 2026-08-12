@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import MenuCard from '@/components/customer/menu/MenuCard';
+import { sortMenuOpenFirst } from '@/lib/vendor-availability';
 import type { MenuItem } from '@/types';
 
 export default function MenuPage() {
@@ -40,13 +41,14 @@ export default function MenuPage() {
 
   const filtered = useMemo(() => {
     const term = search.toLowerCase();
-    return items.filter((item) => {
+    const matched = items.filter((item) => {
       const matchesCategory = category === 'ALL' || item.category === category;
       const matchesSearch =
         item.name.toLowerCase().includes(term) ||
         item.description.toLowerCase().includes(term);
       return matchesCategory && matchesSearch;
     });
+    return sortMenuOpenFirst(matched);
   }, [items, search, category]);
 
   return (

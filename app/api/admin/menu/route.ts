@@ -36,6 +36,12 @@ export async function POST(req: NextRequest) {
 
     const data = await req.json();
 
+    // Admin-created items attach to the first approved vendor when present.
+    const defaultVendor = await prisma.vendor.findFirst({
+      where: { status: 'APPROVED' },
+      orderBy: { createdAt: 'asc' },
+    });
+
     const menuItem = await prisma.menuItem.create({
       data: {
         name: data.name,
@@ -44,7 +50,8 @@ export async function POST(req: NextRequest) {
         category: data.category,
         image: data.image,
         badges: data.badges,
-        available: data.available
+        available: data.available,
+        vendorId: defaultVendor?.id,
       }
     });
 

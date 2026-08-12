@@ -57,8 +57,8 @@ export default function Footer() {
               </Link>
             </li>
             <li>
-              <Link href="/admin" className="hover:text-emerald-600">
-                Staff dashboard
+              <Link href="/login" className="hover:text-emerald-600">
+                Login
               </Link>
             </li>
           </ul>

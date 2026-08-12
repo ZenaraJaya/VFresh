@@ -42,6 +42,13 @@ export default function Header() {
             </button>
 
             <Link
+              href="/login"
+              className="hidden rounded-xl border border-neutral-200 px-3 py-2 text-sm font-medium transition hover:bg-neutral-50 sm:block dark:border-neutral-700 dark:hover:bg-neutral-800"
+            >
+              Login
+            </Link>
+
+            <Link
               href="/menu"
               className="hidden rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-600 sm:block"
             >

@@ -6,6 +6,7 @@ import Badge from '@/components/shared/ui/Badge';
 import AddToCartPanel from '@/components/customer/menu/AddToCartPanel';
 import { prisma } from '@/lib/db';
 import { formatMYR } from '@/lib/pricing';
+import { VENDOR_HOURS_SELECT } from '@/lib/vendor-availability';
 import type { MenuItem } from '@/types';
 
 export const dynamic = 'force-dynamic';
@@ -18,11 +19,33 @@ export default async function MenuItemPage({
 }) {
   const { id } = await params;
 
-  const item = await prisma.menuItem.findUnique({ where: { id } });
+  const item = await prisma.menuItem.findUnique({
+    where: { id },
+    include: {
+      vendor: {
+        select: {
+          id: true,
+          businessName: true,
+          slug: true,
+          ...VENDOR_HOURS_SELECT,
+        },
+      },
+    },
+  });
   if (!item) notFound();
 
   const related = await prisma.menuItem.findMany({
     where: { category: item.category, available: true, id: { not: item.id } },
+    include: {
+      vendor: {
+        select: {
+          id: true,
+          businessName: true,
+          slug: true,
+          ...VENDOR_HOURS_SELECT,
+        },
+      },
+    },
     take: 3,
   });
 

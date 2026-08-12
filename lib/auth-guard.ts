@@ -13,7 +13,24 @@ export async function requireAdmin() {
   const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'ADMIN') {
-    redirect('/admin/login');
+    redirect('/login');
+  }
+
+  return session;
+}
+
+/**
+ * Gate vendor dashboard pages. Pending vendors land on /vendor/pending.
+ */
+export async function requireVendor() {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user.role !== 'VENDOR') {
+    redirect('/login');
+  }
+
+  if (session.user.vendorStatus && session.user.vendorStatus !== 'APPROVED') {
+    redirect('/vendor/pending');
   }
 
   return session;

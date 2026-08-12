@@ -8,15 +8,19 @@ import {
   Leaf,
   ReceiptText,
   ShoppingCart,
+  Store,
+  Users,
   UtensilsCrossed
 } from 'lucide-react';
 
 const LINKS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { href: '/admin/vendors', label: 'Vendors', icon: Store },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/admin/menu', label: 'Menu', icon: UtensilsCrossed },
   { href: '/admin/companies', label: 'Companies', icon: Building2 },
-  { href: '/admin/billing', label: 'Billing', icon: ReceiptText }
+  { href: '/admin/billing', label: 'Billing', icon: ReceiptText },
+  { href: '/admin/admins', label: 'Admins', icon: Users }
 ];
 
 export default function AdminSidebar() {

@@ -12,7 +12,7 @@ export default function MenuSection({ items }: { items: MenuItem[] }) {
             This week&apos;s favourites
           </h2>
           <p className="mt-2 text-neutral-600 dark:text-neutral-400">
-            A rotating selection from the full menu.
+            Popular picks from our kitchens — each card shows the vendor.
           </p>
         </div>
         <Link

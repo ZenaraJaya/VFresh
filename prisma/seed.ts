@@ -217,19 +217,80 @@ async function main() {
   }
   console.log(`companies: ${COMPANIES.length}`);
 
-  // MenuItem has no unique key besides id, so match on name before inserting
-  // to keep repeated seed runs idempotent.
-  let created = 0;
-  for (const item of MENU_ITEMS) {
-    const existing = await prisma.menuItem.findFirst({
-      where: { name: item.name }
-    });
-    if (existing) continue;
+  // Vendors first so menu items can attach to them.
+  const vendorEmail = (
+    process.env.SEED_VENDOR_EMAIL ?? 'vendor@vfresh.my'
+  )
+    .toLowerCase()
+    .trim();
+  const vendorPassword =
+    process.env.SEED_VENDOR_PASSWORD ?? password;
 
-    await prisma.menuItem.create({ data: { ...item, available: true } });
+  const vendor = await prisma.vendor.upsert({
+    where: { email: vendorEmail },
+    update: { status: 'APPROVED' },
+    create: {
+      email: vendorEmail,
+      password: await bcrypt.hash(vendorPassword, 10),
+      businessName: 'Demo Kitchen',
+      slug: 'demo-kitchen',
+      description: 'Healthy bowls and cold-pressed drinks for office lunch.',
+      phone: '+60 12-345 6789',
+      address: 'Bangsar South, Kuala Lumpur',
+      premisesType: 'OTHER',
+      status: 'APPROVED',
+    },
+  });
+  console.log(`vendor: ${vendor.email} (APPROVED)`);
+
+  const vendor2 = await prisma.vendor.upsert({
+    where: { email: 'greens@vfresh.my' },
+    update: { status: 'APPROVED' },
+    create: {
+      email: 'greens@vfresh.my',
+      password: await bcrypt.hash(vendorPassword, 10),
+      businessName: 'Green Bowl Co',
+      slug: 'green-bowl-co',
+      description: 'Grain bowls and salads, packed fresh every morning.',
+      phone: '+60 12-987 6543',
+      address: 'Damansara Heights, KL',
+      premisesType: 'HOMEBASED',
+      status: 'APPROVED',
+    },
+  });
+  console.log(`vendor: ${vendor2.email} (APPROVED)`);
+
+  const customerEmail = (
+    process.env.SEED_CUSTOMER_EMAIL ?? 'customer@vfresh.my'
+  )
+    .toLowerCase()
+    .trim();
+  const customerPassword =
+    process.env.SEED_CUSTOMER_PASSWORD ?? password;
+
+  await prisma.customer.upsert({
+    where: { email: customerEmail },
+    update: {},
+    create: {
+      email: customerEmail,
+      name: 'Demo Customer',
+      password: await bcrypt.hash(customerPassword, 10),
+    },
+  });
+  console.log(`customer: ${customerEmail}`);
+
+  // Wipe orphan items without a vendor, then seed under vendors.
+  await prisma.menuItem.deleteMany({});
+  let created = 0;
+  for (let i = 0; i < MENU_ITEMS.length; i++) {
+    const item = MENU_ITEMS[i];
+    const ownerId = i % 3 === 0 ? vendor2.id : vendor.id;
+    await prisma.menuItem.create({
+      data: { ...item, available: true, vendorId: ownerId },
+    });
     created++;
   }
-  console.log(`menu items: ${created} created, ${MENU_ITEMS.length - created} already present`);
+  console.log(`menu items: ${created} created`);
 }
 
 main()

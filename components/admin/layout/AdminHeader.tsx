@@ -29,7 +29,7 @@ export default function AdminHeader() {
           </div>
         )}
         <button
-          onClick={() => signOut({ callbackUrl: '/admin/login' })}
+          onClick={() => signOut({ callbackUrl: '/login' })}
           className="flex items-center gap-2 rounded-xl border border-neutral-200 px-3 py-2 text-sm font-medium transition hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
         >
           <LogOut className="h-4 w-4" />
