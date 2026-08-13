@@ -10,8 +10,12 @@ if (process.env.VERCEL) {
   neonConfig.poolQueryViaFetch = true;
 }
 
+/** Bump when Customer/Order fields change so HMR drops a stale Prisma singleton. */
+const PRISMA_CLIENT_REV = 3;
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
+  prismaRev?: number;
 };
 
 function neonConnectionString(raw: string) {
@@ -46,18 +50,39 @@ function makePrisma() {
   });
 }
 
+function customerFieldNames(client: PrismaClient): string[] {
+  const model = (
+    client as unknown as {
+      _runtimeDataModel?: {
+        models?: Record<string, { fields?: Array<{ name: string }> }>;
+      };
+    }
+  )._runtimeDataModel?.models?.Customer;
+  return model?.fields?.map((field) => field.name) ?? [];
+}
+
 function clientLooksCurrent(client: PrismaClient) {
+  const fields = customerFieldNames(client);
   return (
-    typeof client.recurringOrder?.findMany === 'function' &&
-    typeof client.customer?.findMany === 'function'
+    fields.includes('companyId') &&
+    fields.includes('paymentMethod') &&
+    typeof client.recurringOrder?.findMany === 'function'
   );
 }
 
-let prisma = globalForPrisma.prisma ?? makePrisma();
-if (!clientLooksCurrent(prisma)) {
-  prisma = makePrisma();
+const cached = globalForPrisma.prisma;
+const reuse =
+  cached &&
+  globalForPrisma.prismaRev === PRISMA_CLIENT_REV &&
+  clientLooksCurrent(cached);
+
+const prisma = reuse ? cached : makePrisma();
+
+if (cached && cached !== prisma) {
+  void cached.$disconnect();
 }
 
 export { prisma };
 
 globalForPrisma.prisma = prisma;
+globalForPrisma.prismaRev = PRISMA_CLIENT_REV;

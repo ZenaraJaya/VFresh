@@ -115,8 +115,8 @@ export const authOptions: NextAuthOptions = {
             token.companyId = customer.companyId ?? undefined;
             if (customer.name) token.name = customer.name;
           }
-        } catch (error) {
-          console.error('Customer session refresh failed', error);
+        } catch {
+          // Stale Prisma clients after a schema change can fail here; keep the JWT.
         }
       }
 
