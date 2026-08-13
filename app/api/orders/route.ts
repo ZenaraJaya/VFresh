@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { calculateTotals, toMoney } from '@/lib/pricing';
 import { isVendorAcceptingOrders } from '@/lib/vendor-availability';
 import { assertSellableForCheckout } from '@/lib/daily-pack';
+import { newOrderNumber } from '@/lib/order-number';
 
 const orderSchema = z.object({
   companyId: z.string().min(1),
@@ -144,6 +145,7 @@ export async function POST(req: NextRequest) {
           data: {
             ...shared,
             vendorId,
+            orderNumber: newOrderNumber(),
             subtotal,
             tax,
             deliveryFee,
