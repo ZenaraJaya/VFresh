@@ -93,7 +93,8 @@ export default async function Home() {
     featured = [...bestsellers, ...rest].slice(0, 6);
     vendors = sortVendorsOpenFirst(vendorsRaw as VendorPublic[]).slice(0, 6);
   } catch (err) {
-    console.error('Home page data failed', err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('Home page data failed', message);
     loadError = true;
   }
 
