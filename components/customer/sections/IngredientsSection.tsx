@@ -25,7 +25,7 @@ const PILLARS = [
 
 export default function IngredientsSection() {
   return (
-    <section id="ingredients" className="mx-auto max-w-6xl px-4 py-20">
+    <section id="ingredients" className="scroll-mt-20 mx-auto max-w-6xl px-4 py-20">
       <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
         <div className="space-y-4">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">

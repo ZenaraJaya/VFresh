@@ -5,7 +5,7 @@ import type { MenuItem } from '@/types';
 
 export default function MenuSection({ items }: { items: MenuItem[] }) {
   return (
-    <section id="menu" className="mx-auto max-w-6xl px-4 py-20">
+    <section id="menu" className="scroll-mt-20 mx-auto max-w-6xl px-4 py-20">
       <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">

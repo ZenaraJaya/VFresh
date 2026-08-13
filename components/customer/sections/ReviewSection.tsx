@@ -23,7 +23,7 @@ const REVIEWS = [
 
 export default function ReviewSection() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-20">
+    <section id="reviews" className="scroll-mt-20 mx-auto max-w-6xl px-4 py-20">
       <div className="mx-auto max-w-2xl text-center">
         <div className="mb-3 flex items-center justify-center gap-1">
           {Array.from({ length: 5 }).map((_, i) => (

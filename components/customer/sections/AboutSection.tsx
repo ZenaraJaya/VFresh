@@ -27,7 +27,7 @@ export default function AboutSection() {
   return (
     <section
       id="about"
-      className="border-y border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900"
+      className="scroll-mt-20 border-y border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900"
     >
       <div className="mx-auto max-w-6xl px-4 py-20">
         <div className="mx-auto max-w-2xl text-center">
