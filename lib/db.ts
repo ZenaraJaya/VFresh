@@ -5,41 +5,46 @@ import { neonConfig } from '@neondatabase/serverless';
 import { PrismaNeon } from '@prisma/adapter-neon';
 import ws from 'ws';
 
-// Configure Neon for serverless
 neonConfig.webSocketConstructor = ws;
-// Vercel functions cannot keep a WebSocket pool; send queries over HTTP fetch.
-if (process.env.VERCEL) {
-  neonConfig.poolQueryViaFetch = true;
-}
+// HTTP fetch is reliable on Vercel (no sticky WebSocket) and fine locally.
+neonConfig.poolQueryViaFetch = true;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Get connection string from environment
-const connectionString = process.env.DATABASE_URL;
+function createPrisma() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is not defined');
+  }
 
-if (!connectionString) {
-  throw new Error('DATABASE_URL is not defined');
+  const adapter = new PrismaNeon({
+    connectionString,
+    max: process.env.VERCEL ? 1 : 10,
+    idleTimeoutMillis: 30_000,
+  });
+
+  return new PrismaClient({
+    adapter,
+    log:
+      process.env.NODE_ENV === 'development'
+        ? ['query', 'error', 'warn']
+        : ['error'],
+  });
 }
 
-// PrismaNeon takes a neon PoolConfig and owns the pool itself. Handing it an
-// already-constructed Pool silently yields an adapter with no connection
-// string, which then falls back to libpq defaults (localhost).
-const adapter = new PrismaNeon({
-  connectionString,
-  max: 10,
-  idleTimeoutMillis: 30000,
-});
-
-// Initialize Prisma Client WITH ADAPTER
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  adapter,  // <-- Pass adapter here instead of url in schema
-  log: process.env.NODE_ENV === 'development'
-    ? ['query', 'error', 'warn']
-    : ['error'],
-});
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
+function getClient() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createPrisma();
+  }
+  return globalForPrisma.prisma;
 }
+
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop, _receiver) {
+    const client = getClient();
+    const value = Reflect.get(client, prop, client);
+    return typeof value === 'function' ? value.bind(client) : value;
+  },
+});

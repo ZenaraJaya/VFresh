@@ -16,7 +16,6 @@ import {
 import type { MenuItem, VendorPublic } from '@/types';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
 
 function mapItem(item: {
   id: string;
@@ -48,54 +47,77 @@ function mapItem(item: {
 }
 
 export default async function Home() {
-  const [featuredRaw, vendorsRaw] = await Promise.all([
-    prisma.menuItem.findMany({
-      where: { available: true, vendor: { status: 'APPROVED' } },
-      include: {
-        vendor: {
-          select: {
-            id: true,
-            businessName: true,
-            slug: true,
-            ...VENDOR_HOURS_SELECT,
+  let featured: MenuItem[] = [];
+  let vendors: VendorPublic[] = [];
+  let loadError = false;
+
+  try {
+    const [featuredRaw, vendorsRaw] = await Promise.all([
+      prisma.menuItem.findMany({
+        where: { available: true, vendor: { status: 'APPROVED' } },
+        include: {
+          vendor: {
+            select: {
+              id: true,
+              businessName: true,
+              slug: true,
+              ...VENDOR_HOURS_SELECT,
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 48,
-    }),
-    prisma.vendor.findMany({
-      where: { status: 'APPROVED' },
-      orderBy: { businessName: 'asc' },
-      select: {
-        id: true,
-        businessName: true,
-        slug: true,
-        description: true,
-        logo: true,
-        phone: true,
-        address: true,
-        ...VENDOR_HOURS_SELECT,
-        _count: { select: { menuItems: { where: { available: true } } } },
-      },
-    }),
-  ]);
+        orderBy: { createdAt: 'desc' },
+        take: 48,
+      }),
+      prisma.vendor.findMany({
+        where: { status: 'APPROVED' },
+        orderBy: { businessName: 'asc' },
+        select: {
+          id: true,
+          businessName: true,
+          slug: true,
+          description: true,
+          logo: true,
+          phone: true,
+          address: true,
+          ...VENDOR_HOURS_SELECT,
+          _count: { select: { menuItems: { where: { available: true } } } },
+        },
+      }),
+    ]);
 
-  // Favourites: open vendors only. Prefer BESTSELLER, then newest.
-  const withBadges = featuredRaw.map(mapItem).filter(isMenuFromOpenVendor);
-  const bestsellers = withBadges.filter((i) =>
-    i.badges.includes('BESTSELLER')
-  );
-  const rest = withBadges.filter((i) => !i.badges.includes('BESTSELLER'));
-  const featured = [...bestsellers, ...rest].slice(0, 6);
-  const vendors = sortVendorsOpenFirst(vendorsRaw as VendorPublic[]).slice(0, 6);
+    const withBadges = featuredRaw.map(mapItem).filter(isMenuFromOpenVendor);
+    const bestsellers = withBadges.filter((i) =>
+      i.badges.includes('BESTSELLER')
+    );
+    const rest = withBadges.filter((i) => !i.badges.includes('BESTSELLER'));
+    featured = [...bestsellers, ...rest].slice(0, 6);
+    vendors = sortVendorsOpenFirst(vendorsRaw as VendorPublic[]).slice(0, 6);
+  } catch (err) {
+    console.error('Home page data failed', err);
+    loadError = true;
+  }
 
   return (
     <SiteShell>
       <HeroSection />
       <HomeSearch />
-      <MenuSection items={featured} />
-      <VendorsSection vendors={vendors} />
+      {loadError ? (
+        <div className="mx-auto max-w-6xl px-4 py-12">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-10 text-center dark:border-amber-900 dark:bg-amber-950/40">
+            <p className="font-medium text-amber-900 dark:text-amber-200">
+              The menu could not be loaded right now.
+            </p>
+            <p className="mt-1 text-sm text-amber-800 dark:text-amber-300">
+              Refresh in a few seconds — the kitchens are still in the database.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <MenuSection items={featured} />
+          <VendorsSection vendors={vendors} />
+        </>
+      )}
       <AboutSection />
       <IngredientsSection />
       <LocationSection />
