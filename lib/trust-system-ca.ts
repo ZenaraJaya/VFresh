@@ -18,11 +18,9 @@ export function trustSystemCa() {
   if (typeof process === 'undefined' || process.platform !== 'win32') return;
 
   const getBuiltin = (
-    process as NodeJS.Process & {
-      getBuiltinModule?: (name: string) => TlsWithSystemCa | undefined;
-    }
+    process as { getBuiltinModule?: (id: string) => unknown }
   ).getBuiltinModule;
-  const tls = getBuiltin?.('tls');
+  const tls = getBuiltin?.('tls') as TlsWithSystemCa | undefined;
   if (!tls?.setDefaultCACertificates || !tls.getCACertificates) return;
 
   try {
