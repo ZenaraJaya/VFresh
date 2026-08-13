@@ -237,8 +237,12 @@ async function main() {
       description: 'Healthy bowls and cold-pressed drinks for office lunch.',
       phone: '+60 12-345 6789',
       address: 'Bangsar South, Kuala Lumpur',
+      logo: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1200&auto=format&fit=crop',
       premisesType: 'OTHER',
       status: 'APPROVED',
+      scheduleMode: 'EVERYDAY',
+      openTime: '08:00',
+      closeTime: '16:00',
     },
   });
   console.log(`vendor: ${vendor.email} (APPROVED)`);
@@ -254,8 +258,12 @@ async function main() {
       description: 'Grain bowls and salads, packed fresh every morning.',
       phone: '+60 12-987 6543',
       address: 'Damansara Heights, KL',
+      logo: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200&auto=format&fit=crop',
       premisesType: 'HOMEBASED',
       status: 'APPROVED',
+      scheduleMode: 'EVERYDAY',
+      openTime: '09:00',
+      closeTime: '18:00',
     },
   });
   console.log(`vendor: ${vendor2.email} (APPROVED)`);

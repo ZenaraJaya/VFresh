@@ -4,14 +4,13 @@ import HomeSearch from '@/components/customer/sections/HomeSearch';
 import MenuSection from '@/components/customer/sections/MenuSection';
 import VendorsSection from '@/components/customer/sections/VendorsSection';
 import AboutSection from '@/components/customer/sections/AboutSection';
-import IngredientsSection from '@/components/customer/sections/IngredientsSection';
 import LocationSection from '@/components/customer/sections/LocationSection';
 import ReviewSection from '@/components/customer/sections/ReviewSection';
 import { prisma } from '@/lib/db';
 import {
   isMenuFromOpenVendor,
   sortVendorsOpenFirst,
-  VENDOR_HOURS_SELECT,
+  VENDOR_PUBLIC_SELECT,
 } from '@/lib/vendor-availability';
 import type { MenuItem, VendorPublic } from '@/types';
 
@@ -71,17 +70,7 @@ export default async function Home() {
       prisma.vendor.findMany({
         where: { status: 'APPROVED' },
         orderBy: { businessName: 'asc' },
-        select: {
-          id: true,
-          businessName: true,
-          slug: true,
-          description: true,
-          logo: true,
-          phone: true,
-          address: true,
-          ...VENDOR_HOURS_SELECT,
-          _count: { select: { menuItems: { where: { available: true } } } },
-        },
+        select: VENDOR_PUBLIC_SELECT,
       }),
     ]);
 
@@ -120,7 +109,6 @@ export default async function Home() {
         </>
       )}
       <AboutSection />
-      <IngredientsSection />
       <LocationSection />
       <ReviewSection />
     </SiteShell>

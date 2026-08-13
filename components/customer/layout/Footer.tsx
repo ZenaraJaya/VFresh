@@ -52,8 +52,8 @@ export default function Footer() {
               </Link>
             </li>
             <li>
-              <Link href="/#ingredients" className="hover:text-emerald-600">
-                Ingredients
+              <Link href="/vendors" className="hover:text-emerald-600">
+                Vendors
               </Link>
             </li>
             <li>

@@ -1,13 +1,13 @@
-import Link from 'next/link';
 import MenuCard from '@/components/customer/menu/MenuCard';
+import VendorCard from '@/components/customer/vendors/VendorCard';
 import { prisma } from '@/lib/db';
 import {
   sortMenuOpenFirst,
   sortVendorsOpenFirst,
   VENDOR_HOURS_SELECT,
+  VENDOR_PUBLIC_SELECT,
 } from '@/lib/vendor-availability';
-import type { MenuItem } from '@/types';
-import { Store } from 'lucide-react';
+import type { MenuItem, VendorPublic } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,17 +54,11 @@ export default async function SearchPage({
             OR: [
               { businessName: { contains: q, mode: 'insensitive' } },
               { description: { contains: q, mode: 'insensitive' } },
+              { address: { contains: q, mode: 'insensitive' } },
             ],
           },
           take: 12,
-          select: {
-            id: true,
-            businessName: true,
-            slug: true,
-            description: true,
-            ...VENDOR_HOURS_SELECT,
-            _count: { select: { menuItems: { where: { available: true } } } },
-          },
+          select: VENDOR_PUBLIC_SELECT,
         }),
       ])
     : [[], []];
@@ -75,7 +69,7 @@ export default async function SearchPage({
       badges: Array.isArray(item.badges) ? (item.badges as string[]) : [],
     }))
   );
-  const vendorsSorted = sortVendorsOpenFirst(vendors);
+  const vendorsSorted = sortVendorsOpenFirst(vendors as VendorPublic[]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 px-4 py-12">
@@ -99,21 +93,9 @@ export default async function SearchPage({
               {vendorsSorted.length === 0 ? (
                 <p className="text-sm text-neutral-500">No vendors matched.</p>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   {vendorsSorted.map((v) => (
-                    <Link
-                      key={v.id}
-                      href={`/vendors/${v.slug}`}
-                      className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
-                    >
-                      <Store className="h-5 w-5 text-emerald-600" />
-                      <div>
-                        <p className="font-medium">{v.businessName}</p>
-                        <p className="text-xs text-neutral-500">
-                          {v._count.menuItems} items
-                        </p>
-                      </div>
-                    </Link>
+                    <VendorCard key={v.id} vendor={v} />
                   ))}
                 </div>
               )}

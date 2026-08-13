@@ -8,7 +8,6 @@ export const NAV_LINKS = [
   { href: '/menu', label: 'Menu' },
   { href: '/vendors', label: 'Vendors' },
   { href: '/#about', label: 'How it works' },
-  { href: '/#ingredients', label: 'Ingredients' },
   { href: '/#location', label: 'Locations' },
 ];
 

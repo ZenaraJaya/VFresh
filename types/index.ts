@@ -48,6 +48,7 @@ export interface VendorPublic {
   phone?: string | null;
   address?: string | null;
   isOpen?: boolean;
+  followSchedule?: boolean | null;
   scheduleMode?: string | null;
   closesAt?: string | Date | null;
   closedUntil?: string | Date | null;
