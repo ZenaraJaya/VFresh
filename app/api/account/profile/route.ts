@@ -8,6 +8,18 @@ const patchSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   phone: z.string().max(40).optional(),
   paymentMethod: z.enum(['COMPANY_ACCOUNT', 'CREDIT_CARD']).optional(),
+  billingName: z.string().max(120).optional(),
+  billingEmail: z.union([z.email(), z.literal('')]).optional(),
+  billingPhone: z.string().max(40).optional(),
+  billingAddress: z.string().max(240).optional(),
+  billingCity: z.string().max(80).optional(),
+  billingPostcode: z.string().max(12).optional(),
+  billingState: z.string().max(80).optional(),
+  cardholderName: z.string().max(120).optional(),
+  cardBrand: z.string().max(40).optional(),
+  cardLast4: z.union([z.string().regex(/^\d{4}$/), z.literal('')]).optional(),
+  cardExpMonth: z.number().int().min(1).max(12).nullable().optional(),
+  cardExpYear: z.number().int().min(2024).max(2100).nullable().optional(),
 });
 
 async function customerSession() {
@@ -15,6 +27,28 @@ async function customerSession() {
   if (!session || session.user.role !== 'CUSTOMER') return null;
   return session;
 }
+
+const publicSelect = {
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  paymentMethod: true,
+  companyId: true,
+  billingName: true,
+  billingEmail: true,
+  billingPhone: true,
+  billingAddress: true,
+  billingCity: true,
+  billingPostcode: true,
+  billingState: true,
+  cardholderName: true,
+  cardBrand: true,
+  cardLast4: true,
+  cardExpMonth: true,
+  cardExpYear: true,
+  company: { select: { id: true, name: true } },
+} as const;
 
 export async function GET() {
   const session = await customerSession();
@@ -24,15 +58,7 @@ export async function GET() {
 
   const me = await prisma.customer.findUnique({
     where: { id: session.user.id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      paymentMethod: true,
-      companyId: true,
-      company: { select: { id: true, name: true } },
-    },
+    select: publicSelect,
   });
 
   if (!me) {
@@ -40,6 +66,12 @@ export async function GET() {
   }
 
   return NextResponse.json(me);
+}
+
+function emptyToNull(value: string | undefined) {
+  if (value === undefined) return undefined;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
 }
 
 export async function PATCH(req: Request) {
@@ -53,29 +85,27 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: 'Invalid profile data.' }, { status: 400 });
   }
 
-  const data: {
-    name?: string;
-    phone?: string | null;
-    paymentMethod?: 'COMPANY_ACCOUNT' | 'CREDIT_CARD';
-  } = {};
-
-  if (parsed.data.name !== undefined) data.name = parsed.data.name.trim();
-  if (parsed.data.phone !== undefined) {
-    data.phone = parsed.data.phone.trim() || null;
-  }
-  if (parsed.data.paymentMethod) data.paymentMethod = parsed.data.paymentMethod;
-
+  const p = parsed.data;
   const me = await prisma.customer.update({
     where: { id: session.user.id },
-    data,
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      paymentMethod: true,
-      companyId: true,
+    data: {
+      name: p.name?.trim(),
+      phone: emptyToNull(p.phone),
+      paymentMethod: p.paymentMethod,
+      billingName: emptyToNull(p.billingName),
+      billingEmail: emptyToNull(p.billingEmail),
+      billingPhone: emptyToNull(p.billingPhone),
+      billingAddress: emptyToNull(p.billingAddress),
+      billingCity: emptyToNull(p.billingCity),
+      billingPostcode: emptyToNull(p.billingPostcode),
+      billingState: emptyToNull(p.billingState),
+      cardholderName: emptyToNull(p.cardholderName),
+      cardBrand: emptyToNull(p.cardBrand),
+      cardLast4: emptyToNull(p.cardLast4),
+      cardExpMonth: p.cardExpMonth === undefined ? undefined : p.cardExpMonth,
+      cardExpYear: p.cardExpYear === undefined ? undefined : p.cardExpYear,
     },
+    select: publicSelect,
   });
 
   return NextResponse.json(me);

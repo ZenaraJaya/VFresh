@@ -61,6 +61,7 @@ export async function POST(req: Request) {
         email,
         password: await bcrypt.hash(password, 10),
         companyId: company.id,
+        paymentMethod: 'CREDIT_CARD',
       },
       select: { id: true, email: true, name: true },
     });

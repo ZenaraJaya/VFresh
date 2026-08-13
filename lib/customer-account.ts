@@ -71,7 +71,15 @@ export async function loadCustomerAccount(callbackUrl: string) {
   const me = await prisma.customer.findUnique({
     where: { id: session.user.id },
     include: {
-      company: { select: { id: true, name: true } },
+      company: {
+        select: {
+          id: true,
+          name: true,
+          billingEmail: true,
+          billingAddress: true,
+          phone: true,
+        },
+      },
     },
   });
 

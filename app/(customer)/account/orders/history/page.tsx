@@ -4,6 +4,7 @@ import {
   loadCustomerAccount,
   orderInclude,
 } from '@/lib/customer-account';
+import { PageIntro } from '@/components/customer/account/ui';
 import OrdersSubnav from '@/components/customer/account/OrdersSubnav';
 import OrderCardList from '@/components/customer/account/OrderCardList';
 
@@ -28,12 +29,10 @@ export default async function AccountOrderHistoryPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-        Order history
-      </h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        Completed and cancelled orders.
-      </p>
+      <PageIntro
+        title="Order history"
+        description="Completed and cancelled orders."
+      />
       <OrdersSubnav />
       <OrderCardList orders={orders} />
     </>

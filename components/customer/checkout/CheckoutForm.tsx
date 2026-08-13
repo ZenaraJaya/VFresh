@@ -51,7 +51,7 @@ export default function CheckoutForm() {
 
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
   const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>('COMPANY_ACCOUNT');
+    useState<PaymentMethod>('CREDIT_CARD');
   const [submitting, setSubmitting] = useState(false);
 
   const {
@@ -85,7 +85,9 @@ export default function CheckoutForm() {
       .then((res) => (res.ok ? res.json() : null))
       .then((profile) => {
         if (!profile) return;
-        if (profile.phone) setValue('employeePhone', profile.phone);
+        if (profile.phone || profile.billingPhone) {
+          setValue('employeePhone', profile.phone || profile.billingPhone);
+        }
         if (profile.paymentMethod === 'COMPANY_ACCOUNT' || profile.paymentMethod === 'CREDIT_CARD') {
           setPaymentMethod(profile.paymentMethod);
         }

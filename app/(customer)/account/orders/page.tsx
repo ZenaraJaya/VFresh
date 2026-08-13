@@ -5,6 +5,7 @@ import {
   loadCustomerAccount,
   orderInclude,
 } from '@/lib/customer-account';
+import { PageIntro } from '@/components/customer/account/ui';
 import OrdersSubnav from '@/components/customer/account/OrdersSubnav';
 import OrderCardList from '@/components/customer/account/OrderCardList';
 
@@ -27,10 +28,10 @@ export default async function AccountOrdersPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Orders</h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        Open orders you placed. Teammates have their own lists.
-      </p>
+      <PageIntro
+        title="Orders"
+        description="Open orders you placed. Teammates have their own lists."
+      />
       <OrdersSubnav />
       <OrderCardList orders={orders} />
     </>

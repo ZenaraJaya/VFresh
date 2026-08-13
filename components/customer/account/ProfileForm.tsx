@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
+import { FIELD } from '@/components/customer/account/ui';
 
 export default function ProfileForm({
   name,
@@ -50,7 +51,7 @@ export default function ProfileForm({
           required
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className="w-full rounded-xl border border-neutral-200 px-3 py-2 outline-none focus:border-emerald-500 dark:border-neutral-700 dark:bg-neutral-950"
+          className={FIELD}
         />
       </div>
       <div className="space-y-1">
@@ -61,13 +62,13 @@ export default function ProfileForm({
           id="profile-phone"
           value={phoneValue}
           onChange={(e) => setPhoneValue(e.target.value)}
-          className="w-full rounded-xl border border-neutral-200 px-3 py-2 outline-none focus:border-emerald-500 dark:border-neutral-700 dark:bg-neutral-950"
+          className={FIELD}
         />
       </div>
       <button
         type="submit"
         disabled={saving}
-        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+        className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
       >
         {saving ? 'Saving…' : 'Save profile'}
       </button>

@@ -4,9 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const LINKS = [
-  { href: '/account/orders', label: 'Order list', exact: true },
+  { href: '/account/orders', label: 'Open', exact: true },
   { href: '/account/orders/history', label: 'History' },
-  { href: '/account/orders/payment', label: 'Payment method' },
   { href: '/account/orders/schedule', label: 'Scheduled' },
 ];
 

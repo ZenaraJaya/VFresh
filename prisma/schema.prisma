@@ -84,7 +84,19 @@ model Customer {
   name          String?
   phone         String?
   companyId     String?
-  paymentMethod PaymentMethod  @default(COMPANY_ACCOUNT)
+  paymentMethod PaymentMethod  @default(CREDIT_CARD)
+  billingName     String?
+  billingEmail    String?
+  billingPhone    String?
+  billingAddress  String?
+  billingCity     String?
+  billingPostcode String?
+  billingState    String?
+  cardholderName  String?
+  cardBrand       String?
+  cardLast4       String?
+  cardExpMonth    Int?
+  cardExpYear     Int?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 

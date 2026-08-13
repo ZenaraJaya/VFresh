@@ -11,7 +11,7 @@ if (process.env.VERCEL) {
 }
 
 /** Bump when Customer/Order fields change so HMR drops a stale Prisma singleton. */
-const PRISMA_CLIENT_REV = 3;
+const PRISMA_CLIENT_REV = 4;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -65,6 +65,7 @@ function clientLooksCurrent(client: PrismaClient) {
   const fields = customerFieldNames(client);
   return (
     fields.includes('companyId') &&
+    fields.includes('billingName') &&
     fields.includes('paymentMethod') &&
     typeof client.recurringOrder?.findMany === 'function'
   );

@@ -8,6 +8,13 @@ import {
   loadCustomerAccount,
   ymd,
 } from '@/lib/customer-account';
+import {
+  PageIntro,
+  SectionCard,
+  StatusBadge,
+  invoiceTone,
+  orderTone,
+} from '@/components/customer/account/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,32 +47,42 @@ export default async function AccountInvoiceDetailPage({
 
   return (
     <>
-      <p className="text-sm">
-        <Link href="/account/invoices" className="text-emerald-700 hover:underline">
+      <p className="mb-3 text-sm">
+        <Link
+          href="/account/invoices"
+          className="font-medium text-emerald-700 hover:underline"
+        >
           ← Invoices
         </Link>
       </p>
-      <h1 className="mt-3 font-mono text-2xl font-bold tracking-tight">
-        {invoice.invoiceNumber}
-      </h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        {invoice.company.name} · {ymd(invoice.periodStart)} →{' '}
-        {ymd(invoice.periodEnd)} · {INVOICE_LABEL[invoice.status] ?? invoice.status}
-      </p>
-      <p className="mt-2 text-lg font-semibold">{formatMYR(invoice.totalAmount)}</p>
-      <p className="text-sm text-neutral-500">Due {ymd(invoice.dueDate)}</p>
+      <PageIntro
+        title={invoice.invoiceNumber}
+        description={`${invoice.company.name} · ${ymd(invoice.periodStart)} → ${ymd(invoice.periodEnd)}`}
+      />
 
-      <h2 className="mt-8 text-lg font-semibold">Orders on this invoice</h2>
-      {invoice.orders.length === 0 ? (
-        <p className="mt-3 text-sm text-neutral-500">No orders attached.</p>
-      ) : (
-        <ul className="mt-3 space-y-3">
-          {invoice.orders.map((order) => (
-            <li
-              key={order.id}
-              className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800"
-            >
-              <div className="flex flex-wrap justify-between gap-2">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+        <div>
+          <p className="text-sm text-neutral-500">Amount due</p>
+          <p className="text-2xl font-semibold tabular-nums">
+            {formatMYR(invoice.totalAmount)}
+          </p>
+          <p className="mt-1 text-sm text-neutral-500">Due {ymd(invoice.dueDate)}</p>
+        </div>
+        <StatusBadge tone={invoiceTone(invoice.status)}>
+          {INVOICE_LABEL[invoice.status] ?? invoice.status}
+        </StatusBadge>
+      </div>
+
+      <SectionCard title="Orders on this invoice">
+        {invoice.orders.length === 0 ? (
+          <p className="text-sm text-neutral-500">No orders attached.</p>
+        ) : (
+          <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {invoice.orders.map((order) => (
+              <li
+                key={order.id}
+                className="flex flex-wrap justify-between gap-2 py-3 first:pt-0 last:pb-0"
+              >
                 <div>
                   <p className="font-mono text-sm font-semibold">
                     {order.orderNumber}
@@ -85,16 +102,18 @@ export default async function AccountInvoiceDetailPage({
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold">{formatMYR(order.total)}</p>
-                  <p className="text-xs text-neutral-500">
-                    {ORDER_LABEL[order.status] ?? order.status}
+                  <p className="font-semibold tabular-nums">
+                    {formatMYR(order.total)}
                   </p>
+                  <StatusBadge tone={orderTone(order.status)}>
+                    {ORDER_LABEL[order.status] ?? order.status}
+                  </StatusBadge>
                 </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </SectionCard>
     </>
   );
 }

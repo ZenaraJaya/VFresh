@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { loadCustomerAccount } from '@/lib/customer-account';
 import ProfileForm from '@/components/customer/account/ProfileForm';
 import PasswordForm from '@/components/customer/account/PasswordForm';
+import { PageIntro, SectionCard } from '@/components/customer/account/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,72 +21,72 @@ export default async function AccountProfilePage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Profile</h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        {me?.company
-          ? `${me.company.name} · ${session.user.email}`
-          : session.user.email}
-      </p>
+      <PageIntro
+        title="Profile"
+        description="Your details for delivery and login. Billing lives under Billing."
+      />
 
-      <section className="mt-8 rounded-2xl border border-neutral-200 p-5 dark:border-neutral-800">
-        <h2 className="text-lg font-semibold">Your details</h2>
-        <p className="mt-1 text-sm text-neutral-500">
-          Used on checkout and weekly orders.
-        </p>
-        <div className="mt-4">
+      <div className="space-y-6">
+        <SectionCard
+          title="Personal details"
+          description="Used on checkout and weekly orders."
+        >
           <ProfileForm name={me?.name ?? ''} phone={me?.phone ?? ''} />
-        </div>
-        <p className="mt-4 text-sm text-neutral-500">
-          Email{' '}
-          <span className="font-medium text-neutral-800 dark:text-neutral-200">
-            {me?.email ?? session.user.email}
-          </span>{' '}
-          cannot be changed.
-        </p>
-      </section>
-
-      <section className="mt-8 rounded-2xl border border-neutral-200 p-5 dark:border-neutral-800">
-        <h2 className="text-lg font-semibold">Company</h2>
-        {!me?.company ? (
-          <p className="mt-2 text-sm text-neutral-500">
-            No company linked. Register again with your company to share
-            invoices with teammates.
+          <p className="mt-4 text-sm text-neutral-500">
+            Email{' '}
+            <span className="font-medium text-neutral-800 dark:text-neutral-200">
+              {me?.email ?? session.user.email}
+            </span>{' '}
+            cannot be changed.
           </p>
-        ) : (
-          <>
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-              You share invoices and payment history with everyone registered
-              under <strong>{me.company.name}</strong>. Orders and weekly
-              schedules stay on your own account.
-            </p>
-            <ul className="mt-4 divide-y divide-neutral-200 dark:divide-neutral-800">
-              {teammates.map((person) => (
-                <li
-                  key={person.id}
-                  className="flex flex-wrap items-baseline justify-between gap-2 py-2 text-sm"
-                >
-                  <span>
-                    {person.name || person.email}
-                    {person.id === session.user.id ? ' (you)' : ''}
-                  </span>
-                  <span className="text-xs text-neutral-500">
-                    {first?.id === person.id
-                      ? 'First to join this company'
-                      : person.email}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </section>
+        </SectionCard>
 
-      <section className="mt-8 rounded-2xl border border-neutral-200 p-5 dark:border-neutral-800">
-        <h2 className="text-lg font-semibold">Password</h2>
-        <div className="mt-4">
+        <SectionCard
+          title="Company"
+          description="Staff who register under the same company share invoices."
+        >
+          {!me?.company ? (
+            <p className="text-sm text-neutral-500">
+              No company linked yet.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                <span className="font-semibold text-neutral-900 dark:text-white">
+                  {me.company.name}
+                </span>
+                . Orders and this card stay on your account.
+              </p>
+              <ul className="mt-4 divide-y divide-neutral-100 dark:divide-neutral-800">
+                {teammates.map((person) => (
+                  <li
+                    key={person.id}
+                    className="flex flex-wrap items-baseline justify-between gap-2 py-2.5 text-sm"
+                  >
+                    <span className="font-medium">
+                      {person.name || person.email}
+                      {person.id === session.user.id ? (
+                        <span className="ml-2 text-xs font-normal text-emerald-700">
+                          You
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="text-xs text-neutral-500">
+                      {first?.id === person.id
+                        ? 'First to join'
+                        : person.email}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Password" description="Change your sign-in password.">
           <PasswordForm />
-        </div>
-      </section>
+        </SectionCard>
+      </div>
     </>
   );
 }

@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { formatMYR } from '@/lib/pricing';
 import { ORDER_LABEL, ymd } from '@/lib/customer-account';
+import {
+  EmptyState,
+  StatusBadge,
+  orderTone,
+} from '@/components/customer/account/ui';
 
 type OrderRow = {
   id: string;
@@ -16,20 +21,21 @@ type OrderRow = {
 export default function OrderCardList({ orders }: { orders: OrderRow[] }) {
   if (orders.length === 0) {
     return (
-      <p className="mt-3 rounded-2xl border border-dashed border-neutral-300 px-4 py-10 text-center text-sm text-neutral-500 dark:border-neutral-700">
-        No orders here yet.
-      </p>
+      <EmptyState
+        title="No orders here"
+        body="When you place an order, it will appear in this list."
+      />
     );
   }
 
   return (
-    <ul className="mt-3 space-y-3">
+    <ul className="mt-4 space-y-3">
       {orders.map((order) => (
         <li
           key={order.id}
-          className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800"
+          className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
         >
-          <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="font-mono text-sm font-semibold">{order.orderNumber}</p>
               <p className="mt-0.5 text-sm text-neutral-500">
@@ -43,13 +49,15 @@ export default function OrderCardList({ orders }: { orders: OrderRow[] }) {
               </p>
             </div>
             <div className="text-right">
-              <p className="font-semibold">{formatMYR(order.total)}</p>
-              <p className="text-xs text-neutral-500">
-                {ORDER_LABEL[order.status] ?? order.status}
-              </p>
+              <p className="font-semibold tabular-nums">{formatMYR(order.total)}</p>
+              <div className="mt-1">
+                <StatusBadge tone={orderTone(order.status)}>
+                  {ORDER_LABEL[order.status] ?? order.status}
+                </StatusBadge>
+              </div>
               <Link
                 href={`/order-confirmation/${encodeURIComponent(order.orderNumber)}`}
-                className="text-xs font-medium text-emerald-600"
+                className="mt-2 inline-block text-xs font-semibold text-emerald-700"
               >
                 Track
               </Link>
