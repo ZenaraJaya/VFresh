@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 import Badge from '@/components/shared/ui/Badge';
 
 interface MenuItem {

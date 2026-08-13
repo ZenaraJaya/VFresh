@@ -165,7 +165,9 @@ export default function VendorAvailabilityPanel() {
   };
 
   useEffect(() => {
-    load();
+    void load();
+    // Fetch current hours once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const patch = async (body: Record<string, unknown>) => {

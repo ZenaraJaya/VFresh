@@ -21,7 +21,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const { password: _, ...safe } = vendor;
+  const { password: _password, ...safe } = vendor;
   return NextResponse.json(safe);
 }
 
@@ -67,6 +67,6 @@ export async function PATCH(req: Request) {
     },
   });
 
-  const { password: _, ...safe } = vendor;
+  const { password: _password, ...safe } = vendor;
   return NextResponse.json(safe);
 }
