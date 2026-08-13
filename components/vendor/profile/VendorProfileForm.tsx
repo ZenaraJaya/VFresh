@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { readImageFileAsJpeg } from '@/lib/read-image-file';
+import RequiredMark from '@/components/shared/ui/RequiredMark';
 
 type Profile = {
   businessName: string;
@@ -16,7 +17,7 @@ type Profile = {
   slug: string;
 };
 
-export default function VendorProfileForm() {
+export default function VendorStoreForm() {
   const [form, setForm] = useState<Profile | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -74,7 +75,7 @@ export default function VendorProfileForm() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'fail');
-      toast.success('Profile saved — customers will see this on your page');
+      toast.success('Store profile saved — customers will see this on your page');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Save failed');
     } finally {
@@ -83,30 +84,22 @@ export default function VendorProfileForm() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600">
-            Store
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-            Store profile
-          </h1>
-          <p className="mt-1 text-sm text-neutral-500">
-            Logo, address, and hours (from the dashboard) show on your public
-            vendor page.
-          </p>
-        </div>
+    <div className="mx-auto max-w-xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Store</h1>
+        <p className="mt-1 text-sm text-neutral-500">
+          What customers see on your kitchen page.
+        </p>
       </div>
 
       <form
         onSubmit={save}
-        className="space-y-5 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 sm:p-8"
+        className="space-y-5 rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900 sm:p-6"
       >
         <div className="space-y-2">
           <label className="text-sm font-medium">Logo or cover image</label>
           <p className="text-xs text-neutral-500">
-            Shown on the customer vendor list and your storefront.
+            Upload a photo from your phone or computer.
           </p>
           <div className="flex flex-wrap items-start gap-4">
             {form.logo ? (
@@ -146,15 +139,6 @@ export default function VendorProfileForm() {
               </label>
             )}
           </div>
-          <input
-            type="url"
-            value={form.logo.startsWith('data:') ? '' : form.logo}
-            onChange={(e) =>
-              setForm((f) => (f ? { ...f, logo: e.target.value } : f))
-            }
-            placeholder="Or paste an image URL"
-            className="w-full rounded-xl border border-neutral-200 px-3 py-2.5 dark:border-neutral-700 dark:bg-neutral-950"
-          />
         </div>
 
         {(
@@ -165,7 +149,10 @@ export default function VendorProfileForm() {
           ] as const
         ).map(([key, label]) => (
           <div key={key} className="space-y-1">
-            <label className="text-sm font-medium">{label}</label>
+            <label className="text-sm font-medium">
+              {label}
+              <RequiredMark />
+            </label>
             <input
               value={form[key]}
               onChange={(e) =>
@@ -178,7 +165,10 @@ export default function VendorProfileForm() {
         ))}
 
         <div className="space-y-1">
-          <label className="text-sm font-medium">Short description</label>
+          <label className="text-sm font-medium">
+            Short description
+            <RequiredMark />
+          </label>
           <textarea
             rows={4}
             required
@@ -192,7 +182,10 @@ export default function VendorProfileForm() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1">
-            <label className="text-sm font-medium">Premises type</label>
+            <label className="text-sm font-medium">
+              Premises type
+              <RequiredMark />
+            </label>
             <select
               value={form.premisesType}
               onChange={(e) =>
@@ -234,7 +227,7 @@ export default function VendorProfileForm() {
             className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-60"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Save profile
+            Save store
           </button>
         </div>
       </form>

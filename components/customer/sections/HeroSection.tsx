@@ -8,20 +8,20 @@ export default function HeroSection() {
         <div className="space-y-6">
           <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
             <Salad className="h-3.5 w-3.5" />
-            Corporate meal delivery
+            Healthy meals in Miri
           </span>
 
           <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
             Fresh food,
             <br />
-            delivered to your{' '}
-            <span className="text-emerald-600 dark:text-emerald-400">desk</span>
+            delivered in{' '}
+            <span className="text-emerald-600 dark:text-emerald-400">Miri</span>
           </h1>
 
           <p className="max-w-lg text-lg text-neutral-600 dark:text-neutral-300">
-            Cold-pressed smoothies, grain bowls, wraps and salads made each
-            morning and delivered to offices across the Klang Valley. One
-            monthly invoice per company — no petty cash, no chasing receipts.
+            VFresh is a platform by Zenara Jaya. Order from local kitchens —
+            bowls, wraps, salads and drinks — delivered in the Miri area,
+            depending on each vendor&apos;s location.
           </p>
 
           <div className="flex flex-wrap gap-3">
@@ -36,15 +36,15 @@ export default function HeroSection() {
               href="/#about"
               className="inline-flex items-center rounded-xl border border-neutral-300 px-6 py-3 font-medium transition hover:bg-white dark:border-neutral-700 dark:hover:bg-neutral-800"
             >
-              How it works
+              About us
             </Link>
           </div>
 
           <dl className="grid grid-cols-3 gap-4 pt-4">
             {[
-              { label: 'Companies served', value: '120+' },
-              { label: 'Meals per week', value: '4,800' },
-              { label: 'Avg. delivery', value: '25 min' }
+              { label: 'Service area', value: 'Miri' },
+              { label: 'Local kitchens', value: 'Vendors' },
+              { label: 'By', value: 'Zenara Jaya' }
             ].map((stat) => (
               <div key={stat.label}>
                 <dt className="text-xs uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
@@ -61,23 +61,23 @@ export default function HeroSection() {
             {
               icon: Clock,
               title: 'Order by 10am',
-              body: 'Same-day lunch delivery for the whole team.'
+              body: 'Same-day lunch around Miri when the kitchen is open.',
             },
             {
               icon: Truck,
-              title: 'Free over RM 100',
-              body: 'Office-sized orders ship at no extra cost.'
+              title: 'Local kitchens',
+              body: 'Browse vendors, see their address and hours, then order.',
             },
             {
               icon: Salad,
               title: 'Made that morning',
-              body: 'Nothing sits overnight. Ever.'
+              body: 'Fresh meals from kitchens on the platform.',
             },
             {
               icon: ArrowRight,
-              title: 'Monthly invoice',
-              body: 'One statement per company, due in 30 days.'
-            }
+              title: 'Miri area',
+              body: 'Delivery depends on the kitchen location.',
+            },
           ].map((card) => (
             <div
               key={card.title}

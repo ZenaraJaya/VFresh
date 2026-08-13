@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { parsePackQty } from '@/lib/daily-pack';
 
 async function requireOwnedItem(id: string) {
   const session = await getServerSession(authOptions);
@@ -42,6 +43,22 @@ export async function PATCH(
   if (body.price !== undefined) data.price = Number(body.price);
   if (body.badges !== undefined) data.badges = body.badges;
   if (body.available !== undefined) data.available = Boolean(body.available);
+  try {
+    if (body.dailyPackQty !== undefined) {
+      data.dailyPackQty = parsePackQty(body.dailyPackQty);
+      if (body.remainingQty === undefined && data.dailyPackQty !== undefined) {
+        data.remainingQty = data.dailyPackQty;
+      }
+    }
+    if (body.remainingQty !== undefined) {
+      data.remainingQty = parsePackQty(body.remainingQty);
+    }
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Invalid quantity' },
+      { status: 400 }
+    );
+  }
 
   const item = await prisma.menuItem.update({ where: { id }, data });
   return NextResponse.json(item);

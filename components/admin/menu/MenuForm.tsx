@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Upload, Plus, XCircle } from 'lucide-react';
 import Image from 'next/image';
+import RequiredMark from '@/components/shared/ui/RequiredMark';
 
 interface MenuItem {
   id?: string;
@@ -130,7 +131,10 @@ export default function MenuForm({ item, onSave, onClose }: MenuFormProps) {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Image Upload */}
           <div>
-            <label className="block text-sm font-medium mb-2">Image</label>
+            <label className="mb-2 block text-sm font-medium">
+              Image
+              <RequiredMark />
+            </label>
             <div className="flex items-start gap-4">
               {imagePreview ? (
                 <div className="relative w-32 h-32 rounded-xl overflow-hidden">
@@ -189,7 +193,10 @@ export default function MenuForm({ item, onSave, onClose }: MenuFormProps) {
           {/* Basic Info */}
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="block text-sm font-medium mb-2">Name *</label>
+              <label className="mb-2 block text-sm font-medium">
+                Name
+                <RequiredMark />
+              </label>
               <input
                 type="text"
                 required
@@ -212,7 +219,10 @@ export default function MenuForm({ item, onSave, onClose }: MenuFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Price (RM) *</label>
+              <label className="mb-2 block text-sm font-medium">
+                Price (RM)
+                <RequiredMark />
+              </label>
               <input
                 type="number"
                 step="0.01"
@@ -225,7 +235,10 @@ export default function MenuForm({ item, onSave, onClose }: MenuFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Category *</label>
+              <label className="mb-2 block text-sm font-medium">
+                Category
+                <RequiredMark />
+              </label>
               <select
                 required
                 value={formData.category}

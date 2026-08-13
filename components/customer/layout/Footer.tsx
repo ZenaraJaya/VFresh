@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Clock, Leaf, Mail, MapPin, Phone } from 'lucide-react';
+import { Clock, Leaf, Mail, MapPin } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -13,8 +13,8 @@ export default function Footer() {
             <span className="text-lg font-bold tracking-tight">VFresh</span>
           </div>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            Cold-pressed smoothies, grain bowls and salads delivered to offices
-            across the Klang Valley.
+            A healthy food platform by Zenara Jaya. Local kitchens, delivered
+            in the Miri area.
           </p>
         </div>
 
@@ -71,11 +71,7 @@ export default function Footer() {
           <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
             <li className="flex items-start gap-2">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-              Jalan Kia Peng, 50450 Kuala Lumpur
-            </li>
-            <li className="flex items-center gap-2">
-              <Phone className="h-4 w-4 shrink-0 text-emerald-500" />
-              +60 3-2181 8888
+              Miri, Sarawak
             </li>
             <li className="flex items-center gap-2">
               <Mail className="h-4 w-4 shrink-0 text-emerald-500" />
@@ -90,7 +86,7 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-neutral-200 px-4 py-5 text-center text-xs text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
-        © {new Date().getFullYear()} VFresh Sdn Bhd. All rights reserved.
+        © {new Date().getFullYear()} Zenara Jaya. VFresh. All rights reserved.
       </div>
     </footer>
   );

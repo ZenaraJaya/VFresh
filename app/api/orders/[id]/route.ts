@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { applyOrderStatusStock } from '@/lib/daily-pack';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -59,20 +60,62 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
+    const existing = await prisma.order.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
+    const isAdmin = session.user.role === 'ADMIN';
+    const isOwnerVendor =
+      session.user.role === 'VENDOR' &&
+      session.user.vendorStatus === 'APPROVED' &&
+      existing.vendorId === session.user.id;
+
+    if (!isAdmin && !isOwnerVendor) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { status, paymentStatus } = parsed.data;
+    if (!isAdmin && paymentStatus) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (status) {
+      try {
+        const order = await applyOrderStatusStock(id, status);
+        if (paymentStatus) {
+          const paid = await prisma.order.update({
+            where: { id },
+            data: {
+              paymentStatus,
+              ...(paymentStatus === 'PAID' ? { paidAt: new Date() } : {}),
+            },
+            include: {
+              company: { select: { id: true, name: true } },
+              items: { include: { menuItem: true } },
+            },
+          });
+          return NextResponse.json(paid);
+        }
+        return NextResponse.json(order);
+      } catch (err) {
+        return NextResponse.json(
+          { error: err instanceof Error ? err.message : 'Could not update order' },
+          { status: 400 }
+        );
+      }
+    }
 
     const order = await prisma.order.update({
       where: { id },
       data: {
-        ...(status ? { status } : {}),
         ...(paymentStatus ? { paymentStatus } : {}),
-        // Stamp the payment time exactly when it flips to PAID.
-        ...(paymentStatus === 'PAID' ? { paidAt: new Date() } : {})
+        ...(paymentStatus === 'PAID' ? { paidAt: new Date() } : {}),
       },
       include: {
         company: { select: { id: true, name: true } },
-        items: { include: { menuItem: true } }
-      }
+        items: { include: { menuItem: true } },
+      },
     });
 
     return NextResponse.json(order);

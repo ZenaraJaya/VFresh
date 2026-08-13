@@ -21,6 +21,8 @@ export interface MenuItem {
   image: string;
   badges: string[];
   available: boolean;
+  dailyPackQty?: number | null;
+  remainingQty?: number | null;
   vendorId?: string | null;
   vendor?: {
     id: string;
@@ -100,9 +102,12 @@ export interface Order {
   paymentStatus: PaymentStatus;
   paidAt?: string | null;
   invoiceId?: string | null;
+  vendorId?: string | null;
   createdAt: string;
   updatedAt: string;
   company?: Company;
+  vendor?: { id: string; businessName: string; slug?: string } | null;
+  stockDeducted?: boolean;
   items?: OrderItem[];
 }
 

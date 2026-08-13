@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PasswordInput from '@/components/shared/ui/PasswordInput';
 import { isValidPassword, MIN_PASSWORD_LENGTH } from '@/lib/password-rules';
+import RequiredMark from '@/components/shared/ui/RequiredMark';
 
 type AdminRow = {
   id: string;
@@ -230,7 +232,10 @@ export default function AdminStaffPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium">Email</label>
+              <label className="text-sm font-medium">
+                Email
+                <RequiredMark />
+              </label>
               <input
                 type="email"
                 required
@@ -242,28 +247,16 @@ export default function AdminStaffPage() {
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-medium">
-                {editing ? 'New password (optional)' : 'Password'}
-              </label>
-              <input
-                type="password"
-                required={!editing}
-                minLength={MIN_PASSWORD_LENGTH}
-                value={form.password}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, password: e.target.value }))
-                }
-                className="w-full rounded-xl border border-neutral-200 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-950"
-                placeholder={`Min ${MIN_PASSWORD_LENGTH} characters`}
-              />
-              {form.password.length > 0 &&
-                !isValidPassword(form.password) && (
-                  <p className="text-xs text-amber-600">
-                    Password must be at least {MIN_PASSWORD_LENGTH} characters.
-                  </p>
-                )}
-            </div>
+            <PasswordInput
+              id="admin-password"
+              label={editing ? 'New password (optional)' : 'Password'}
+              value={form.password}
+              onChange={(password) => setForm((f) => ({ ...f, password }))}
+              autoComplete="new-password"
+              required={!editing}
+              showRule
+              placeholder={`Min ${MIN_PASSWORD_LENGTH} characters`}
+            />
 
             <div className="flex justify-end gap-2 pt-2">
               <button

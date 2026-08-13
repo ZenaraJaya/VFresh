@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import SiteShell from '@/components/customer/layout/SiteShell';
+import RequiredMark from '@/components/shared/ui/RequiredMark';
 
 /**
  * Order lookup. The confirmation itself lives at
@@ -32,10 +33,16 @@ export default function OrderLookupPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-3">
+          <label className="block text-sm font-medium" htmlFor="orderNumber">
+            Order number
+            <RequiredMark />
+          </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400" />
             <input
               type="text"
+              id="orderNumber"
+              required
               value={orderNumber}
               onChange={(e) => setOrderNumber(e.target.value)}
               placeholder="ORD-…"

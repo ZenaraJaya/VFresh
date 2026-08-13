@@ -9,6 +9,8 @@ import {
 } from 'react';
 import type { CartLine, MenuItem } from '@/types';
 import { calculateTotals } from '@/lib/pricing';
+import { maxCartQty } from '@/lib/daily-pack-qty';
+import toast from 'react-hot-toast';
 
 const STORAGE_KEY = 'vfresh.cart';
 const EMPTY_RAW = '[]';
@@ -64,7 +66,7 @@ interface CartContextValue {
   total: number;
   /** False until the persisted cart has been read, so the UI can avoid a flash of "empty". */
   hydrated: boolean;
-  addItem: (item: MenuItem, quantity?: number, notes?: string) => void;
+  addItem: (item: MenuItem, quantity?: number, notes?: string) => boolean;
   removeItem: (menuItemId: string) => void;
   setQuantity: (menuItemId: string, quantity: number) => void;
   setNotes: (menuItemId: string, notes: string) => void;
@@ -91,18 +93,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const addItem = useCallback((item: MenuItem, quantity = 1, notes?: string) => {
-    setLines((prev) => {
-      const existing = prev.find((l) => l.menuItem.id === item.id);
-      if (existing) {
-        return prev.map((l) =>
+    const prev = parseLines(readRaw());
+    const existing = prev.find((l) => l.menuItem.id === item.id);
+    const already = existing?.quantity ?? 0;
+    const max = maxCartQty(item.remainingQty);
+    if (max <= 0) {
+      toast.error('Sold out for today');
+      return false;
+    }
+    if (already >= max) {
+      toast.error(`Only ${max} left today`);
+      return false;
+    }
+    const nextQty = Math.min(max, already + quantity);
+    if (nextQty < already + quantity) {
+      toast.error(`Only ${max} left today`);
+    }
+    const next = existing
+      ? prev.map((l) =>
           l.menuItem.id === item.id
-            ? { ...l, quantity: l.quantity + quantity, notes: notes ?? l.notes }
+            ? {
+                ...l,
+                quantity: nextQty,
+                notes: notes ?? l.notes,
+                menuItem: { ...l.menuItem, remainingQty: item.remainingQty },
+              }
             : l
-        );
-      }
-      return [...prev, { menuItem: item, quantity, notes }];
-    });
-  }, [setLines]);
+        )
+      : [...prev, { menuItem: item, quantity: nextQty, notes }];
+    writeLines(next);
+    return true;
+  }, []);
 
   const removeItem = useCallback((menuItemId: string) => {
     setLines((prev) => prev.filter((l) => l.menuItem.id !== menuItemId));
@@ -110,11 +131,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const setQuantity = useCallback((menuItemId: string, quantity: number) => {
     setLines((prev) =>
-      quantity <= 0
-        ? prev.filter((l) => l.menuItem.id !== menuItemId)
-        : prev.map((l) =>
-            l.menuItem.id === menuItemId ? { ...l, quantity } : l
-          )
+      prev.flatMap((l) => {
+        if (l.menuItem.id !== menuItemId) return [l];
+        if (quantity <= 0) return [];
+        const max = maxCartQty(l.menuItem.remainingQty);
+        const next = Math.min(max, quantity);
+        if (max > 0 && quantity > max) {
+          toast.error(`Only ${max} left today`);
+        }
+        if (next <= 0) return [];
+        return [{ ...l, quantity: next }];
+      })
     );
   }, [setLines]);
 

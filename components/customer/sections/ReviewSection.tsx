@@ -5,19 +5,19 @@ const REVIEWS = [
     quote:
       'We used to spend an hour a day coordinating lunch for 40 people. Now it is one order and one invoice.',
     name: 'Aisyah R.',
-    role: 'Office Manager, Fintech startup in KLCC'
+    role: 'Office manager, Miri'
   },
   {
     quote:
       'The bowls actually taste like they were made that morning, because they were. Our team noticed immediately.',
     name: 'Daniel Lim',
-    role: 'Head of People, Agency in Bangsar'
+    role: 'Team lead, Miri'
   },
   {
     quote:
       'Finance stopped complaining about receipts. That alone was worth switching.',
     name: 'Priya N.',
-    role: 'Operations Lead, Consultancy in PJ'
+    role: 'Operations, Miri'
   }
 ];
 
@@ -35,10 +35,10 @@ export default function ReviewSection() {
           ))}
         </div>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          What offices say
+          What customers say
         </h2>
         <p className="mt-3 text-neutral-600 dark:text-neutral-400">
-          Rated 4.8 out of 5 across 340 company accounts.
+          From teams and households ordering through VFresh in Miri.
         </p>
       </div>
 

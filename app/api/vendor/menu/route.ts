@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { parsePackQty } from '@/lib/daily-pack';
 
 async function requireVendorSession() {
   const session = await getServerSession(authOptions);
@@ -48,6 +49,17 @@ export async function POST(req: Request) {
   const price = Number(body.price);
   const badges = Array.isArray(body.badges) ? body.badges : [];
   const available = body.available !== false;
+  let dailyPackQty: number | null | undefined;
+  let remainingQty: number | null | undefined;
+  try {
+    dailyPackQty = parsePackQty(body.dailyPackQty);
+    remainingQty = parsePackQty(body.remainingQty);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Invalid quantity' },
+      { status: 400 }
+    );
+  }
 
   if (!name || !description || !category || !image || Number.isNaN(price)) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -62,6 +74,9 @@ export async function POST(req: Request) {
       price,
       badges,
       available,
+      dailyPackQty: dailyPackQty ?? null,
+      remainingQty:
+        remainingQty !== undefined ? remainingQty : (dailyPackQty ?? null),
       vendorId: session.user.id,
     },
   });

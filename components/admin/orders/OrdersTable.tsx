@@ -117,6 +117,7 @@ export default function OrdersTable() {
             <thead className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500 dark:border-neutral-800">
               <tr>
                 <th className="px-4 py-3 font-semibold">Order</th>
+                <th className="px-4 py-3 font-semibold">Vendor</th>
                 <th className="px-4 py-3 font-semibold">Company</th>
                 <th className="px-4 py-3 font-semibold">Employee</th>
                 <th className="px-4 py-3 font-semibold">Delivery</th>
@@ -141,6 +142,9 @@ export default function OrdersTable() {
                       {order.items?.length ?? 0} item
                       {(order.items?.length ?? 0) === 1 ? '' : 's'}
                     </p>
+                  </td>
+                  <td className="px-4 py-3">
+                    {order.vendor?.businessName ?? '—'}
                   </td>
                   <td className="px-4 py-3">{order.company?.name ?? '—'}</td>
                   <td className="px-4 py-3">

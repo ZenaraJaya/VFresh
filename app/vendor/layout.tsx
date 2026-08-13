@@ -57,7 +57,7 @@ export default async function VendorLayout({
           slug={vendor.slug}
         />
         <main className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto w-full max-w-5xl">{children}</div>
+          <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>
     </div>

@@ -18,6 +18,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        try {
         if (!credentials?.email || !credentials.password) return null;
 
         const email = credentials.email.toLowerCase().trim();
@@ -59,6 +60,10 @@ export const authOptions: NextAuthOptions = {
           name: customer.name ?? customer.email,
           role: 'CUSTOMER',
         };
+        } catch (error) {
+          console.error('Sign-in failed', error);
+          return null;
+        }
       },
     }),
   ],
@@ -67,17 +72,30 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         const u = user as { role?: string; vendorStatus?: string };
         token.role = u.role ?? 'CUSTOMER';
-        if (u.vendorStatus) token.vendorStatus = u.vendorStatus;
+        token.vendorStatus = u.vendorStatus;
       }
+
+      // Keep vendor approval in sync so an approved kitchen is not stuck
+      // on the pending screen after sign-in.
+      if (token.role === 'VENDOR' && token.sub) {
+        try {
+          const vendor = await prisma.vendor.findUnique({
+            where: { id: token.sub },
+            select: { status: true },
+          });
+          if (vendor) token.vendorStatus = vendor.status;
+        } catch (error) {
+          console.error('Vendor session refresh failed', error);
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub ?? '';
         session.user.role = (token.role as string) ?? 'CUSTOMER';
-        if (token.vendorStatus) {
-          session.user.vendorStatus = token.vendorStatus as string;
-        }
+        session.user.vendorStatus = token.vendorStatus as string | undefined;
       }
       return session;
     },

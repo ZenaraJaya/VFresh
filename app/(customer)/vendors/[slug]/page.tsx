@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
-import { Clock, MapPin, Phone } from 'lucide-react';
-import MenuCard from '@/components/customer/menu/MenuCard';
+import Link from 'next/link';
+import { ArrowLeft, Clock, MapPin, Phone } from 'lucide-react';
 import VendorLogo from '@/components/customer/vendors/VendorLogo';
+import VendorMenuList from '@/components/customer/vendors/VendorMenuList';
 import { prisma } from '@/lib/db';
 import {
   formatVendorSchedule,
@@ -10,6 +11,7 @@ import {
   VENDOR_HOURS_SELECT,
 } from '@/lib/vendor-availability';
 import type { MenuItem } from '@/types';
+import { withPublicPackQty } from '@/lib/daily-pack';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,92 +46,78 @@ export default async function VendorStorePage({
     orderBy: { name: 'asc' },
   });
 
-  const items: MenuItem[] = foods.map((item) => ({
-    ...item,
-    badges: Array.isArray(item.badges) ? (item.badges as string[]) : [],
-  }));
+  const items: MenuItem[] = await withPublicPackQty(
+    foods.map((item) => ({
+      ...item,
+      badges: Array.isArray(item.badges) ? (item.badges as string[]) : [],
+    }))
+  );
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-12">
-      <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-        <div className="relative h-44 bg-neutral-100 sm:h-56 dark:bg-neutral-800">
-          {vendor.logo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={vendor.logo}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <VendorLogo
-                src={null}
-                name={vendor.businessName}
-                className="h-20 w-20"
-              />
-            </div>
-          )}
-        </div>
-        <div className="space-y-4 p-6 sm:p-8">
+    <div className="mx-auto max-w-6xl space-y-10 px-4 py-12">
+      <Link
+        href="/vendors"
+        className="inline-flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-emerald-600 dark:text-neutral-400"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to vendors
+      </Link>
+
+      <header className="flex flex-col gap-6 border-b border-neutral-200 pb-8 dark:border-neutral-800 sm:flex-row sm:items-start">
+        <VendorLogo
+          src={vendor.logo}
+          name={vendor.businessName}
+          className="h-24 w-24 shrink-0 rounded-2xl sm:h-28 sm:w-28"
+        />
+        <div className="min-w-0 flex-1 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
-              Vendor
-            </p>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {vendor.businessName}
+            </h1>
             <span
               className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                 accepting
-                  ? 'bg-emerald-50 text-emerald-700'
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
                   : 'bg-amber-50 text-amber-800'
               }`}
             >
               {accepting ? 'Open' : 'Temporarily closed'}
             </span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {vendor.businessName}
-          </h1>
           {vendor.description && (
             <p className="max-w-2xl text-neutral-600 dark:text-neutral-400">
               {vendor.description}
             </p>
           )}
-          <div className="flex flex-col gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+          <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-neutral-600 dark:text-neutral-400">
             {vendor.address && (
-              <p className="flex items-start gap-2">
+              <div className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                {vendor.address}
-              </p>
+                <span>{vendor.address}</span>
+              </div>
             )}
             {hours && (
-              <p className="flex items-start gap-2">
+              <div className="flex items-start gap-2">
                 <Clock className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                {hours}
-              </p>
+                <span>{hours}</span>
+              </div>
             )}
             {vendor.phone && (
-              <p className="flex items-start gap-2">
+              <div className="flex items-start gap-2">
                 <Phone className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                {vendor.phone}
-              </p>
+                <span>{vendor.phone}</span>
+              </div>
             )}
-          </div>
+          </dl>
           {closedLabel && (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
               {closedLabel}
             </p>
           )}
         </div>
-      </div>
+      </header>
 
-      {items.length === 0 ? (
-        <p className="text-neutral-500">No menu items yet.</p>
-      ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((item) => (
-            <MenuCard key={item.id} item={item} />
-          ))}
-        </div>
-      )}
+      <VendorMenuList items={items} />
     </div>
   );
 }

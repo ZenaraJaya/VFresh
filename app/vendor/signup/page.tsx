@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Leaf, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import RequiredMark from '@/components/shared/ui/RequiredMark';
 
 export default function VendorSignupPage() {
   const router = useRouter();
@@ -68,7 +69,10 @@ export default function VendorSignupPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm font-medium">Business name</label>
+          <label className="text-sm font-medium">
+            Business name
+            <RequiredMark />
+          </label>
           <input
             required
             value={form.businessName}
@@ -82,7 +86,10 @@ export default function VendorSignupPage() {
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
-            <label className="text-sm font-medium">Email</label>
+            <label className="text-sm font-medium">
+              Email
+              <RequiredMark />
+            </label>
             <input
               type="email"
               required
@@ -95,7 +102,10 @@ export default function VendorSignupPage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium">Phone</label>
+            <label className="text-sm font-medium">
+              Phone
+              <RequiredMark />
+            </label>
             <input
               type="tel"
               required
@@ -110,7 +120,10 @@ export default function VendorSignupPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm font-medium">Address</label>
+          <label className="text-sm font-medium">
+            Address
+            <RequiredMark />
+          </label>
           <input
             required
             value={form.address}
@@ -123,7 +136,10 @@ export default function VendorSignupPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm font-medium">Short description</label>
+          <label className="text-sm font-medium">
+            Short description
+            <RequiredMark />
+          </label>
           <textarea
             required
             rows={3}
@@ -138,7 +154,8 @@ export default function VendorSignupPage() {
 
         <div className="space-y-1">
           <label className="text-sm font-medium">
-            Premises type <span className="text-neutral-400">(required)</span>
+            Premises type
+            <RequiredMark />
           </label>
           <select
             required

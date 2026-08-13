@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import SafeImage from '@/components/shared/ui/SafeImage';
 import Link from 'next/link';
 import { Plus, Store } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -13,7 +13,13 @@ import {
 } from '@/lib/vendor-availability';
 import type { MenuItem } from '@/types';
 
-export default function MenuCard({ item }: { item: MenuItem }) {
+export default function MenuCard({
+  item,
+  hideVendor = false,
+}: {
+  item: MenuItem;
+  hideVendor?: boolean;
+}) {
   const { addItem } = useCart();
   const accepting = item.vendor
     ? isVendorAcceptingOrders({
@@ -22,6 +28,8 @@ export default function MenuCard({ item }: { item: MenuItem }) {
         status: 'APPROVED',
       })
     : true;
+  const soldOut = item.remainingQty === 0;
+  const canAdd = accepting && !soldOut;
   const closedLabel = item.vendor
     ? vendorClosedLabel({
         ...item.vendor,
@@ -35,8 +43,14 @@ export default function MenuCard({ item }: { item: MenuItem }) {
       toast.error('This vendor is temporarily closed');
       return;
     }
-    addItem(item, 1);
-    toast.success(`${item.name} added to cart`);
+    const left = item.remainingQty;
+    if (left === 0) {
+      toast.error('Sold out for today');
+      return;
+    }
+    if (addItem(item, 1)) {
+      toast.success(`${item.name} added to cart`);
+    }
   };
 
   return (
@@ -46,15 +60,18 @@ export default function MenuCard({ item }: { item: MenuItem }) {
     >
       <div className="relative h-44 bg-neutral-100 dark:bg-neutral-800">
         {item.image && (
-          <Image
+          <SafeImage
             src={item.image}
             alt={item.name}
-            fill
-            sizes="(min-width: 1024px) 320px, (min-width: 640px) 45vw, 90vw"
-            className={`object-cover transition duration-300 group-hover:scale-105 ${
-              !accepting ? 'opacity-70 grayscale' : ''
+            className={`h-full w-full object-cover transition duration-300 group-hover:scale-105 ${
+              !canAdd ? 'opacity-70 grayscale' : ''
             }`}
           />
+        )}
+        {soldOut && accepting && (
+          <span className="absolute left-3 top-3 rounded-full bg-neutral-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+            Sold out
+          </span>
         )}
         {!accepting && (
           <span className="absolute left-3 top-3 rounded-full bg-amber-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
@@ -63,10 +80,10 @@ export default function MenuCard({ item }: { item: MenuItem }) {
         )}
         <button
           onClick={handleAdd}
-          disabled={!accepting}
+          disabled={!canAdd}
           aria-label={`Add ${item.name} to cart`}
           className={`absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full text-white shadow-lg transition ${
-            accepting
+            canAdd
               ? 'bg-emerald-500 hover:bg-emerald-600'
               : 'cursor-not-allowed bg-neutral-300'
           }`}
@@ -87,13 +104,18 @@ export default function MenuCard({ item }: { item: MenuItem }) {
           {item.description}
         </p>
 
-        {item.vendor && (
+        {!hideVendor && item.vendor && (
           <div className="mb-3 flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 dark:border-neutral-700 dark:bg-neutral-800/80">
             <Store className="h-3.5 w-3.5 shrink-0 text-neutral-500 dark:text-neutral-400" />
             <p className="truncate text-sm font-semibold text-neutral-800 dark:text-neutral-100">
               {item.vendor.businessName}
             </p>
           </div>
+        )}
+        {item.remainingQty != null && item.remainingQty > 0 && (
+          <p className="mb-2 text-xs font-medium text-emerald-700">
+            {item.remainingQty} left today
+          </p>
         )}
         {closedLabel && (
           <p className="mb-3 text-xs font-medium text-amber-700">{closedLabel}</p>

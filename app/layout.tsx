@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VFresh — Fresh food, delivered to your office",
+  title: "VFresh — Fresh food, delivered in Miri",
   description:
-    "Corporate catering and daily meal delivery. Cold-pressed smoothies, grain bowls, wraps and salads for teams across Kuala Lumpur.",
+    "VFresh is a healthy food platform by Zenara Jaya. Order from local kitchens and get meals delivered in the Miri area.",
 };
 
 export default function RootLayout({

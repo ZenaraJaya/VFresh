@@ -224,19 +224,20 @@ async function main() {
     .toLowerCase()
     .trim();
   const vendorPassword =
-    process.env.SEED_VENDOR_PASSWORD ?? password;
+    process.env.SEED_VENDOR_PASSWORD ?? 'VFreshVendor123!';
+  const vendorPasswordHash = await bcrypt.hash(vendorPassword, 10);
 
   const vendor = await prisma.vendor.upsert({
     where: { email: vendorEmail },
-    update: { status: 'APPROVED' },
+    update: { status: 'APPROVED', password: vendorPasswordHash },
     create: {
       email: vendorEmail,
-      password: await bcrypt.hash(vendorPassword, 10),
+      password: vendorPasswordHash,
       businessName: 'Demo Kitchen',
       slug: 'demo-kitchen',
       description: 'Healthy bowls and cold-pressed drinks for office lunch.',
       phone: '+60 12-345 6789',
-      address: 'Bangsar South, Kuala Lumpur',
+      address: 'Piasau, Miri',
       logo: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1200&auto=format&fit=crop',
       premisesType: 'OTHER',
       status: 'APPROVED',
@@ -249,15 +250,15 @@ async function main() {
 
   const vendor2 = await prisma.vendor.upsert({
     where: { email: 'greens@vfresh.my' },
-    update: { status: 'APPROVED' },
+    update: { status: 'APPROVED', password: vendorPasswordHash },
     create: {
       email: 'greens@vfresh.my',
-      password: await bcrypt.hash(vendorPassword, 10),
+      password: vendorPasswordHash,
       businessName: 'Green Bowl Co',
       slug: 'green-bowl-co',
       description: 'Grain bowls and salads, packed fresh every morning.',
       phone: '+60 12-987 6543',
-      address: 'Damansara Heights, KL',
+      address: 'Marina Parkcity, Miri',
       logo: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200&auto=format&fit=crop',
       premisesType: 'HOMEBASED',
       status: 'APPROVED',

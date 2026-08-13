@@ -7,7 +7,7 @@ export const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/menu', label: 'Menu' },
   { href: '/vendors', label: 'Vendors' },
-  { href: '/#about', label: 'How it works' },
+  { href: '/order-confirmation', label: 'Track order' },
   { href: '/#location', label: 'Locations' },
 ];
 
@@ -18,6 +18,9 @@ function isActive(href: string, pathname: string) {
   }
   if (href === '/vendors') {
     return pathname === '/vendors' || pathname.startsWith('/vendors/');
+  }
+  if (href === '/order-confirmation') {
+    return pathname.startsWith('/order-confirmation');
   }
   return false;
 }
@@ -35,8 +38,8 @@ export default function Navigation({ vertical, onNavigate }: NavigationProps) {
     <nav
       className={
         vertical
-          ? 'flex flex-col gap-1'
-          : 'hidden items-center gap-0.5 md:flex'
+          ? 'grid grid-cols-1 gap-1'
+          : 'hidden md:grid md:grid-cols-5 md:items-center md:gap-1'
       }
     >
       {NAV_LINKS.map((link) => {
@@ -47,10 +50,10 @@ export default function Navigation({ vertical, onNavigate }: NavigationProps) {
             key={link.href}
             href={link.href}
             onClick={onNavigate}
-            className={`whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium transition ${
+            className={`flex items-center justify-center rounded-lg px-2 py-2 text-center text-sm font-medium ${
               active
-                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
-                : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white'
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
+                : 'text-neutral-600 hover:bg-emerald-50 hover:text-emerald-800 dark:text-neutral-300 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-200'
             }`}
           >
             {link.label}

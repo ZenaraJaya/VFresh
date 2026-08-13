@@ -4,9 +4,10 @@ import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Eye, EyeOff, Leaf, Loader2, Lock, Mail } from 'lucide-react';
+import { Leaf, Loader2, Lock, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { isValidPassword, MIN_PASSWORD_LENGTH } from '@/lib/password-rules';
+import PasswordInput from '@/components/shared/ui/PasswordInput';
+import RequiredMark from '@/components/shared/ui/RequiredMark';
 
 type RoleTab = 'customer' | 'vendor' | 'admin';
 
@@ -44,26 +45,16 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [activeDemo, setActiveDemo] = useState<RoleTab | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const passwordOk = isValidPassword(password);
-  const canSubmit = Boolean(email.trim()) && passwordOk && !submitting;
+  const canSubmit = Boolean(email.trim()) && password.length > 0 && !submitting;
 
-  const fillDemo = (role: RoleTab) => {
-    setActiveDemo(role);
-    setEmail(DEMOS[role].email);
-    setPassword(DEMOS[role].password);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const loginWith = async (emailValue: string, passwordValue: string) => {
     setSubmitting(true);
-
     const res = await signIn('credentials', {
-      email,
-      password,
+      email: emailValue,
+      password: passwordValue,
       redirect: false,
     });
 
@@ -87,6 +78,19 @@ function LoginForm() {
     setSubmitting(false);
   };
 
+  const fillDemo = (role: RoleTab) => {
+    const demo = DEMOS[role];
+    setActiveDemo(role);
+    setEmail(demo.email);
+    setPassword(demo.password);
+    void loginWith(demo.email, demo.password);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await loginWith(email, password);
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -107,6 +111,7 @@ function LoginForm() {
       <div className="space-y-1">
         <label className="text-sm font-medium" htmlFor="email">
           Email
+          <RequiredMark />
         </label>
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
@@ -126,44 +131,18 @@ function LoginForm() {
         </div>
       </div>
 
-      <div className="space-y-1">
-        <label className="text-sm font-medium" htmlFor="password">
-          Password
-        </label>
-        <div className="relative">
-          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-          <input
-            id="password"
-            type={showPassword ? 'text' : 'password'}
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setActiveDemo(null);
-            }}
-            className="w-full rounded-xl border border-neutral-200 bg-white py-2 pl-10 pr-11 outline-none focus:border-emerald-500 dark:border-neutral-700 dark:bg-neutral-950"
-            placeholder="••••••••"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700"
-          >
-            {showPassword ? (
-              <EyeOff className="h-4 w-4" />
-            ) : (
-              <Eye className="h-4 w-4" />
-            )}
-          </button>
-        </div>
-        {password.length > 0 && !passwordOk && (
-          <p className="text-xs text-amber-600">
-            Password must be at least {MIN_PASSWORD_LENGTH} characters.
-          </p>
-        )}
-      </div>
+      <PasswordInput
+        id="password"
+        label="Password"
+        value={password}
+        onChange={(v) => {
+          setPassword(v);
+          setActiveDemo(null);
+        }}
+        autoComplete="current-password"
+        required
+        leftIcon={<Lock className="h-4 w-4" />}
+      />
 
       <button
         type="submit"
@@ -187,12 +166,13 @@ function LoginForm() {
             <button
               key={key}
               type="button"
+              disabled={submitting}
               onClick={() => fillDemo(key)}
               className={`rounded-lg px-2 py-2 text-xs font-semibold transition sm:text-sm ${
                 activeDemo === key
                   ? 'bg-white text-emerald-700 shadow-sm dark:bg-neutral-950 dark:text-emerald-400'
                   : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200'
-              }`}
+              } disabled:opacity-60`}
             >
               {DEMOS[key].label}
             </button>
@@ -200,8 +180,7 @@ function LoginForm() {
         </div>
         {activeDemo && (
           <p className="text-center text-[11px] text-neutral-500">
-            Filled {DEMOS[activeDemo].label}:{' '}
-            <span className="font-mono">{DEMOS[activeDemo].email}</span>
+            Signing in as {DEMOS[activeDemo].label}
           </p>
         )}
       </div>

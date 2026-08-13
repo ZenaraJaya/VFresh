@@ -1,10 +1,11 @@
 'use client';
 
-import Image from 'next/image';
+import SafeImage from '@/components/shared/ui/SafeImage';
 import Link from 'next/link';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { formatMYR } from '@/lib/pricing';
+import { maxCartQty } from '@/lib/daily-pack-qty';
 import type { CartLine } from '@/types';
 
 interface CartItemProps {
@@ -16,17 +17,16 @@ interface CartItemProps {
 export default function CartItem({ line, compact }: CartItemProps) {
   const { setQuantity, removeItem, setNotes } = useCart();
   const { menuItem, quantity, notes } = line;
+  const max = maxCartQty(menuItem.remainingQty);
 
   return (
     <div className="flex gap-3 border-b border-neutral-200 py-4 last:border-b-0 dark:border-neutral-800">
       <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-neutral-100 dark:bg-neutral-800">
         {menuItem.image && (
-          <Image
+          <SafeImage
             src={menuItem.image}
             alt={menuItem.name}
-            fill
-            sizes="80px"
-            className="object-cover"
+            className="h-full w-full object-cover"
           />
         )}
       </div>
@@ -68,7 +68,8 @@ export default function CartItem({ line, compact }: CartItemProps) {
             <button
               onClick={() => setQuantity(menuItem.id, quantity + 1)}
               aria-label="Increase quantity"
-              className="rounded-r-lg px-2 py-1 transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              disabled={quantity >= max}
+              className="rounded-r-lg px-2 py-1 transition hover:bg-neutral-100 disabled:opacity-40 dark:hover:bg-neutral-800"
             >
               <Plus className="h-3.5 w-3.5" />
             </button>

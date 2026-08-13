@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { VENDOR_HOURS_SELECT } from '@/lib/vendor-availability';
+import { withPublicPackQty } from '@/lib/daily-pack';
 
 // GET - Public menu. Only available items, optionally filtered by category.
 export async function GET(req: NextRequest) {
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
       orderBy: [{ category: 'asc' }, { name: 'asc' }]
     });
 
-    return NextResponse.json(menuItems);
+    return NextResponse.json(await withPublicPackQty(menuItems));
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to fetch menu' },

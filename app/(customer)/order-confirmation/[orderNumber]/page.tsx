@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { CalendarDays, CheckCircle2, Clock, MapPin, Receipt } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { formatMYR } from '@/lib/pricing';
+import OrderReceiveButton from '@/components/customer/orders/OrderReceiveButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,8 +26,9 @@ export default async function OrderConfirmationPage({
 
   const order = await prisma.order.findUnique({
     where: { orderNumber: decodeURIComponent(orderNumber) },
-    include: {
+      include: {
       company: { select: { name: true } },
+      vendor: { select: { businessName: true, slug: true } },
       items: { include: { menuItem: true } }
     }
   });
@@ -39,7 +41,9 @@ export default async function OrderConfirmationPage({
         <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-emerald-500" />
         <h1 className="text-3xl font-bold tracking-tight">Order placed</h1>
         <p className="mt-2 text-neutral-600 dark:text-neutral-400">
-          We&apos;ve sent the kitchen your order. Keep this number handy.
+          {order.vendor
+            ? `${order.vendor.businessName} has your order. Keep this number handy.`
+            : "We've sent the kitchen your order. Keep this number handy."}
         </p>
         <p className="mt-4 inline-block rounded-xl bg-neutral-100 px-4 py-2 font-mono text-lg font-semibold dark:bg-neutral-800">
           {order.orderNumber}
@@ -94,7 +98,9 @@ export default async function OrderConfirmationPage({
 
       <div className="rounded-2xl border border-neutral-200 p-6 dark:border-neutral-800">
         <h2 className="mb-4 text-lg font-semibold">
-          {order.employeeName}&apos;s order
+          {order.vendor
+            ? `${order.vendor.businessName} · ${order.employeeName}`
+            : `${order.employeeName}&apos;s order`}
         </h2>
 
         <ul className="space-y-3">
@@ -150,10 +156,15 @@ export default async function OrderConfirmationPage({
         </dl>
       </div>
 
-      <div className="mt-8 text-center">
+      <div className="mt-8 flex flex-col items-center gap-4 text-center">
+        <OrderReceiveButton
+          orderNumber={order.orderNumber}
+          status={order.status}
+          stockDeducted={order.stockDeducted}
+        />
         <Link
           href="/menu"
-          className="inline-block rounded-xl bg-emerald-500 px-6 py-3 font-medium text-white transition hover:bg-emerald-600"
+          className="inline-block rounded-xl border border-neutral-200 px-6 py-3 font-medium transition hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
         >
           Order something else
         </Link>

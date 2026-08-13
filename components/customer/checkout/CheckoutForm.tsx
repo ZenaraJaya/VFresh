@@ -9,7 +9,9 @@ import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PaymentForm from './PaymentForm';
 import { useCart } from '@/context/CartContext';
+import { groupCartByVendor } from '@/lib/group-cart';
 import type { PaymentMethod } from '@/types';
+import RequiredMark from '@/components/shared/ui/RequiredMark';
 
 const schema = z.object({
   companyId: z.string().min(1, 'Select your company'),
@@ -35,6 +37,7 @@ function todayISO() {
 export default function CheckoutForm() {
   const router = useRouter();
   const { lines, clear } = useCart();
+  const vendorGroups = groupCartByVendor(lines);
 
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
   const [paymentMethod, setPaymentMethod] =
@@ -87,9 +90,24 @@ export default function CheckoutForm() {
         return;
       }
 
-      // Only drop the cart once the order is safely persisted.
+      const created: { orderNumber: string }[] = Array.isArray(body.orders)
+        ? body.orders
+        : body.orderNumber
+          ? [{ orderNumber: body.orderNumber }]
+          : [];
+
+      if (created.length === 0) {
+        toast.error('Could not place the order');
+        return;
+      }
+
       clear();
-      router.push(`/order-confirmation/${body.orderNumber}`);
+      if (created.length === 1) {
+        router.push(`/order-confirmation/${created[0].orderNumber}`);
+      } else {
+        const n = created.map((o) => o.orderNumber).join(',');
+        router.push(`/order-confirmation/placed?n=${encodeURIComponent(n)}`);
+      }
     } catch {
       toast.error('Network error — please try again');
     } finally {
@@ -109,6 +127,7 @@ export default function CheckoutForm() {
         <div>
           <label htmlFor="companyId" className="mb-1 block text-sm font-medium">
             Company account
+            <RequiredMark />
           </label>
           <select id="companyId" {...register('companyId')} className={inputClass}>
             <option value="">Select a company…</option>
@@ -130,6 +149,7 @@ export default function CheckoutForm() {
               className="mb-1 block text-sm font-medium"
             >
               Your name
+              <RequiredMark />
             </label>
             <input
               id="employeeName"
@@ -198,6 +218,7 @@ export default function CheckoutForm() {
             className="mb-1 block text-sm font-medium"
           >
             Address, floor and unit
+            <RequiredMark />
           </label>
           <input
             id="deliveryLocation"
@@ -217,6 +238,7 @@ export default function CheckoutForm() {
               className="mb-1 block text-sm font-medium"
             >
               Delivery date
+              <RequiredMark />
             </label>
             <input
               id="deliveryDate"
@@ -269,13 +291,22 @@ export default function CheckoutForm() {
 
       <PaymentForm value={paymentMethod} onChange={setPaymentMethod} />
 
+      {vendorGroups.length > 1 && (
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          Your cart has {vendorGroups.length} kitchens. Each kitchen gets its
+          own order ID: {vendorGroups.map((g) => g.vendorName).join(', ')}.
+        </p>
+      )}
+
       <button
         type="submit"
         disabled={submitting || lines.length === 0}
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-3.5 font-medium text-white transition hover:bg-emerald-600 disabled:opacity-60"
       >
         {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-        Place order
+        {vendorGroups.length > 1
+          ? `Place ${vendorGroups.length} orders`
+          : 'Place order'}
       </button>
     </form>
   );

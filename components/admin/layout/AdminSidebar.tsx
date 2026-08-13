@@ -45,10 +45,10 @@ export default function AdminSidebar() {
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${
                 isActive
-                  ? 'bg-emerald-500 text-white'
-                  : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800'
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
+                  : 'text-neutral-600 hover:bg-emerald-50 hover:text-emerald-800 dark:text-neutral-300 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-200'
               }`}
             >
               <link.icon className="h-4 w-4" />

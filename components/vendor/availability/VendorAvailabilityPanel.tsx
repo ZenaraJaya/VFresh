@@ -13,6 +13,7 @@ import {
   type ScheduleMode,
   type WeeklyHours,
 } from '@/lib/vendor-availability';
+import RequiredMark from '@/components/shared/ui/RequiredMark';
 
 function splitLocal(iso: string | null) {
   if (!iso) return { date: '', time: '' };
@@ -407,6 +408,7 @@ export default function VendorAvailabilityPanel() {
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-neutral-500">
                     Open at
+                    <RequiredMark />
                   </label>
                   <input
                     type="time"
@@ -418,6 +420,7 @@ export default function VendorAvailabilityPanel() {
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-neutral-500">
                     Close at
+                    <RequiredMark />
                   </label>
                   <input
                     type="time"
@@ -550,6 +553,7 @@ export default function VendorAvailabilityPanel() {
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-neutral-500">
                       Open
+                      <RequiredMark />
                     </label>
                     <input
                       type="time"
@@ -563,6 +567,7 @@ export default function VendorAvailabilityPanel() {
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-neutral-500">
                       Close
+                      <RequiredMark />
                     </label>
                     <input
                       type="time"

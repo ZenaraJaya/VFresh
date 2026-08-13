@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
       take: 200,
       include: {
         company: { select: { id: true, name: true } },
+        vendor: { select: { id: true, businessName: true } },
         items: { include: { menuItem: { select: { id: true, name: true } } } }
       }
     });

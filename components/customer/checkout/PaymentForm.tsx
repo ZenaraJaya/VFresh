@@ -2,6 +2,7 @@
 
 import { Building2, CreditCard } from 'lucide-react';
 import type { PaymentMethod } from '@/types';
+import RequiredMark from '@/components/shared/ui/RequiredMark';
 
 interface PaymentFormProps {
   value: PaymentMethod;
@@ -20,7 +21,10 @@ const CARD_PAYMENT_ENABLED = Boolean(
 export default function PaymentForm({ value, onChange }: PaymentFormProps) {
   return (
     <fieldset className="space-y-3">
-      <legend className="mb-3 text-lg font-semibold">Payment</legend>
+      <legend className="mb-3 text-lg font-semibold">
+        Payment
+        <RequiredMark />
+      </legend>
 
       <label
         className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${

@@ -13,6 +13,7 @@ import {
   VENDOR_HOURS_SELECT,
   VENDOR_PUBLIC_SELECT,
 } from '@/lib/vendor-availability';
+import { withPublicPackQty } from '@/lib/daily-pack';
 import type { MenuItem, VendorPublic } from '@/types';
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +27,7 @@ function mapItem(item: {
   image: string;
   badges: unknown;
   available: boolean;
+  remainingQty: number | null;
   vendorId: string | null;
   vendor: {
     id: string;
@@ -75,7 +77,9 @@ export default async function Home() {
       }),
     ]);
 
-    const withBadges = featuredRaw.map(mapItem).filter(isMenuFromOpenVendor);
+    const withBadges = (await withPublicPackQty(featuredRaw))
+      .map(mapItem)
+      .filter(isMenuFromOpenVendor);
     const bestsellers = withBadges.filter((i) =>
       i.badges.includes('BESTSELLER')
     );

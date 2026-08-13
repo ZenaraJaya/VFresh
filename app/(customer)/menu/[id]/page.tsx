@@ -1,12 +1,13 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Badge from '@/components/shared/ui/Badge';
+import SafeImage from '@/components/shared/ui/SafeImage';
 import AddToCartPanel from '@/components/customer/menu/AddToCartPanel';
 import { prisma } from '@/lib/db';
 import { formatMYR } from '@/lib/pricing';
 import { VENDOR_HOURS_SELECT } from '@/lib/vendor-availability';
+import { withPublicPackQty } from '@/lib/daily-pack';
 import type { MenuItem } from '@/types';
 
 export const dynamic = 'force-dynamic';
@@ -33,6 +34,8 @@ export default async function MenuItemPage({
     },
   });
   if (!item) notFound();
+
+  const [publicItem] = await withPublicPackQty([item]);
 
   const related = await prisma.menuItem.findMany({
     where: { category: item.category, available: true, id: { not: item.id } },
@@ -62,13 +65,10 @@ export default async function MenuItemPage({
       <div className="grid gap-10 lg:grid-cols-2">
         <div className="relative aspect-square overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-800">
           {item.image && (
-            <Image
+            <SafeImage
               src={item.image}
               alt={item.name}
-              fill
-              sizes="(min-width: 1024px) 480px, 90vw"
-              className="object-cover"
-              priority
+              className="h-full w-full object-cover"
             />
           )}
         </div>
@@ -96,8 +96,8 @@ export default async function MenuItemPage({
             ))}
           </div>
 
-          {item.available ? (
-            <AddToCartPanel item={item as unknown as MenuItem} />
+          {publicItem.available ? (
+            <AddToCartPanel item={publicItem as unknown as MenuItem} />
           ) : (
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">
               This item is currently unavailable.
@@ -120,12 +120,10 @@ export default async function MenuItemPage({
               >
                 <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-800">
                   {r.image && (
-                    <Image
+                    <SafeImage
                       src={r.image}
                       alt={r.name}
-                      fill
-                      sizes="64px"
-                      className="object-cover"
+                      className="h-full w-full object-cover"
                     />
                   )}
                 </div>

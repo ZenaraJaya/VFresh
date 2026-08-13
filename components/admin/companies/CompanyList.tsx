@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Building2, Loader2, Plus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Company } from '@/types';
+import RequiredMark from '@/components/shared/ui/RequiredMark';
 
 type CompanyRow = Company & { _count?: { orders: number } };
 
@@ -162,6 +163,7 @@ export default function CompanyList() {
             <div>
               <label htmlFor="name" className="mb-1 block text-sm font-medium">
                 Company name
+                <RequiredMark />
               </label>
               <input
                 id="name"
@@ -178,6 +180,7 @@ export default function CompanyList() {
                 className="mb-1 block text-sm font-medium"
               >
                 Billing email
+                <RequiredMark />
               </label>
               <input
                 id="billingEmail"

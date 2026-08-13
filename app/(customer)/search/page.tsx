@@ -8,6 +8,7 @@ import {
   VENDOR_PUBLIC_SELECT,
 } from '@/lib/vendor-availability';
 import type { MenuItem, VendorPublic } from '@/types';
+import { withPublicPackQty } from '@/lib/daily-pack';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,10 +65,12 @@ export default async function SearchPage({
     : [[], []];
 
   const items: MenuItem[] = sortMenuOpenFirst(
-    foods.map((item) => ({
-      ...item,
-      badges: Array.isArray(item.badges) ? (item.badges as string[]) : [],
-    }))
+    await withPublicPackQty(
+      foods.map((item) => ({
+        ...item,
+        badges: Array.isArray(item.badges) ? (item.badges as string[]) : [],
+      }))
+    )
   );
   const vendorsSorted = sortVendorsOpenFirst(vendors as VendorPublic[]);
 

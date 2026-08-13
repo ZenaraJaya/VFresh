@@ -45,7 +45,7 @@ export default function Header() {
               href="/login"
               className="hidden rounded-xl border border-neutral-200 px-3 py-2 text-sm font-medium transition hover:bg-neutral-50 sm:block dark:border-neutral-700 dark:hover:bg-neutral-800"
             >
-              Login
+              Sign Up / Login
             </Link>
 
             <Link
@@ -72,6 +72,15 @@ export default function Header() {
         {mobileOpen && (
           <div className="border-t border-neutral-200 px-4 py-3 md:hidden dark:border-neutral-800">
             <Navigation vertical onNavigate={() => setMobileOpen(false)} />
+            <div className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-800">
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="block rounded-xl bg-emerald-500 px-3 py-2.5 text-center text-sm font-medium text-white transition hover:bg-emerald-600"
+              >
+                Sign Up / Login
+              </Link>
+            </div>
           </div>
         )}
       </header>

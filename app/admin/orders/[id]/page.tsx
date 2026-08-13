@@ -19,12 +19,13 @@ export default async function AdminOrderDetailPage({
 
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { company: true, items: { include: { menuItem: true } } }
+    include: { company: true, vendor: true, items: { include: { menuItem: true } } }
   });
 
   if (!order) notFound();
 
   const details = [
+    ['Vendor', order.vendor?.businessName ?? '—'],
     ['Company', order.company.name],
     ['Billing email', order.company.billingEmail],
     ['Employee', order.employeeName],

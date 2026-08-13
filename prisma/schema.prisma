@@ -71,6 +71,7 @@ model Vendor {
   updatedAt          DateTime     @updatedAt
 
   menuItems MenuItem[]
+  orders    Order[]
 
   @@map("vendors")
 }
@@ -111,6 +112,10 @@ model MenuItem {
   image       String
   badges      Json     @default("[]")
   available   Boolean  @default(true)
+  /// Packs prepared for today. Optional; used as a starting leftover.
+  dailyPackQty Int?
+  /// Packs still in the kitchen. Null = no daily limit. Deducted when received.
+  remainingQty Int?
   vendorId    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -125,6 +130,7 @@ model Order {
   id                  String        @id @default(cuid())
   orderNumber         String        @unique @default(dbgenerated())
   companyId           String
+  vendorId            String?
   employeeName        String
   employeeEmail       String?
   employeePhone       String?
@@ -141,11 +147,14 @@ model Order {
   paymentMethod       PaymentMethod @default(COMPANY_ACCOUNT)
   paymentStatus       PaymentStatus @default(PENDING)
   paidAt              DateTime?
+  /// True after leftover packs were deducted (customer/vendor Receive).
+  stockDeducted       Boolean       @default(false)
   invoiceId           String?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
   company Company     @relation(fields: [companyId], references: [id])
+  vendor  Vendor?     @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   items   OrderItem[]
   invoice Invoice?    @relation(fields: [invoiceId], references: [id])
 

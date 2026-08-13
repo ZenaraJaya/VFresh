@@ -2,19 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
 import {
+  ClipboardList,
   ExternalLink,
   LayoutDashboard,
-  LogOut,
   Store,
+  UserRound,
   UtensilsCrossed,
 } from 'lucide-react';
 
 const links = [
-  { href: '/vendor', label: 'Dashboard', exact: true },
-  { href: '/vendor/menu', label: 'Menu' },
-  { href: '/vendor/profile', label: 'Profile' },
+  { href: '/vendor', label: 'Home', exact: true, icon: LayoutDashboard },
+  { href: '/vendor/orders', label: 'Orders', icon: ClipboardList },
+  { href: '/vendor/menu', label: 'Dishes', icon: UtensilsCrossed },
+  { href: '/vendor/store', label: 'Store', icon: Store },
+  { href: '/vendor/profile', label: 'Profile', icon: UserRound },
 ];
 
 export default function VendorHeader({
@@ -30,66 +32,45 @@ export default function VendorHeader({
 
   return (
     <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
-      <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
+      <div className="flex h-14 items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3 lg:hidden">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 text-sm font-bold text-white">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-sm font-bold text-white">
             {businessName.charAt(0).toUpperCase()}
           </span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{businessName}</p>
-            <p className="truncate text-xs text-neutral-500">{email}</p>
-          </div>
+          <p className="truncate text-sm font-semibold">{businessName}</p>
         </div>
 
-        <div className="hidden min-w-0 lg:block">
-          <p className="text-sm font-medium text-neutral-900 dark:text-white">
-            Kitchen workspace
-          </p>
-          <p className="text-xs text-neutral-500">{email}</p>
-        </div>
+        <p className="hidden truncate text-sm text-neutral-500 lg:block">
+          {email}
+        </p>
 
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/vendors/${slug}`}
-            className="hidden items-center gap-1.5 rounded-xl border border-neutral-200 px-3 py-2 text-sm text-neutral-600 transition hover:border-emerald-300 hover:text-emerald-700 sm:inline-flex dark:border-neutral-700"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            View page
-          </Link>
-          <button
-            type="button"
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Sign out</span>
-          </button>
-        </div>
+        <Link
+          href={`/vendors/${slug}`}
+          target="_blank"
+          className="inline-flex shrink-0 items-center gap-1 text-sm text-neutral-500 hover:text-emerald-700"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          View store
+        </Link>
       </div>
 
-      <nav className="flex gap-1 overflow-x-auto border-t border-neutral-100 px-3 py-2 lg:hidden dark:border-neutral-800">
-        {links.map(({ href, label, exact }) => {
+      <nav className="grid grid-cols-5 gap-1 border-t border-neutral-100 px-2 py-2 lg:hidden dark:border-neutral-800">
+        {links.map(({ href, label, exact, icon: Icon }) => {
           const active = exact
             ? pathname === href
             : pathname.startsWith(href);
-          const Icon =
-            href === '/vendor'
-              ? LayoutDashboard
-              : href === '/vendor/menu'
-                ? UtensilsCrossed
-                : Store;
           return (
             <Link
               key={href}
               href={href}
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold ${
+              className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-2 text-[11px] font-semibold ${
                 active
-                  ? 'bg-emerald-500 text-white'
-                  : 'text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300'
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
+                  : 'text-neutral-600 hover:bg-emerald-50 hover:text-emerald-800 dark:text-neutral-300 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-200'
               }`}
             >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{label}</span>
             </Link>
           );
         })}

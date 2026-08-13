@@ -1,7 +1,7 @@
-import VendorProfileForm from '@/components/vendor/profile/VendorProfileForm';
+import VendorAccountForm from '@/components/vendor/account/VendorAccountForm';
 import { requireVendor } from '@/lib/auth-guard';
 
 export default async function VendorProfilePage() {
   await requireVendor();
-  return <VendorProfileForm />;
+  return <VendorAccountForm />;
 }
