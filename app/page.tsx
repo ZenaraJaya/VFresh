@@ -38,7 +38,7 @@ function mapItem(item: {
     openTime: string | null;
     closeTime: string | null;
     weeklyHours: unknown;
-  };
+  } | null;
 }): MenuItem {
   return {
     ...item,

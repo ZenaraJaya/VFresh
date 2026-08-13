@@ -5,7 +5,7 @@ export type DayHours = { open: string; close: string } | null;
 export type WeeklyHours = Partial<Record<'0' | '1' | '2' | '3' | '4' | '5' | '6', DayHours>>;
 
 export type VendorHours = {
-  isOpen: boolean;
+  isOpen?: boolean;
   followSchedule?: boolean | null;
   scheduleMode?: ScheduleMode | string | null;
   closesAt?: Date | string | null;

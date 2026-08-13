@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -204,7 +205,14 @@ export async function PATCH(req: Request) {
       ...(closedUntil !== undefined ? { closedUntil } : {}),
       ...(openTime !== undefined ? { openTime } : {}),
       ...(closeTime !== undefined ? { closeTime } : {}),
-      ...(weeklyHours !== undefined ? { weeklyHours } : {}),
+      ...(weeklyHours !== undefined
+        ? {
+            weeklyHours:
+              weeklyHours === null
+                ? Prisma.DbNull
+                : (weeklyHours as Prisma.InputJsonValue),
+          }
+        : {}),
     },
     select: {
       id: true,

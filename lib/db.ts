@@ -1,4 +1,5 @@
 // lib/db.ts
+import './trust-system-ca';
 import { PrismaClient } from '@prisma/client';
 import { neonConfig } from '@neondatabase/serverless';
 import { PrismaNeon } from '@prisma/adapter-neon';

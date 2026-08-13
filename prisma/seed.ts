@@ -3,6 +3,7 @@
 // This builds its own client rather than importing lib/db: Node's ESM loader
 // needs an explicit `.ts` extension on relative imports, which TypeScript
 // rejects unless the whole project opts into allowImportingTsExtensions.
+import '../lib/trust-system-ca';
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import { neonConfig } from '@neondatabase/serverless';

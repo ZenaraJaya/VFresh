@@ -279,9 +279,11 @@ export default function AdminStaffPage() {
                   saving ||
                   !form.email.trim() ||
                   (!editing && !isValidPassword(form.password)) ||
-                  (editing &&
-                    form.password.length > 0 &&
-                    !isValidPassword(form.password))
+                  Boolean(
+                    editing &&
+                      form.password.length > 0 &&
+                      !isValidPassword(form.password)
+                  )
                 }
                 className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition ${
                   saving ||

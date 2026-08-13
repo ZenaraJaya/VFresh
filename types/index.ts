@@ -21,21 +21,22 @@ export interface MenuItem {
   image: string;
   badges: string[];
   available: boolean;
-  vendorId?: string;
+  vendorId?: string | null;
   vendor?: {
     id: string;
     businessName: string;
     slug: string;
     isOpen?: boolean;
+    followSchedule?: boolean | null;
     scheduleMode?: string | null;
     closesAt?: string | Date | null;
     closedUntil?: string | Date | null;
     openTime?: string | null;
     closeTime?: string | null;
     weeklyHours?: unknown;
-  };
-  createdAt?: string;
-  updatedAt?: string;
+  } | null;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }
 
 export interface VendorPublic {
