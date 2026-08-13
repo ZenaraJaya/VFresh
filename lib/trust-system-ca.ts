@@ -16,6 +16,9 @@ let applied = false;
  */
 export function trustSystemCa() {
   if (applied) return;
+  // Vercel/Linux already have a working CA store. Replacing it here has
+  // broken TLS to Neon in serverless workers.
+  if (process.platform !== 'win32') return;
   if (typeof nodeTls.setDefaultCACertificates !== 'function') return;
   if (typeof nodeTls.getCACertificates !== 'function') return;
 

@@ -7,6 +7,10 @@ import ws from 'ws';
 
 // Configure Neon for serverless
 neonConfig.webSocketConstructor = ws;
+// Vercel functions cannot keep a WebSocket pool; send queries over HTTP fetch.
+if (process.env.VERCEL) {
+  neonConfig.poolQueryViaFetch = true;
+}
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
