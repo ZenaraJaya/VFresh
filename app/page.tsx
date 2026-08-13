@@ -16,6 +16,7 @@ import {
 import type { MenuItem, VendorPublic } from '@/types';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 function mapItem(item: {
   id: string;
@@ -47,54 +48,47 @@ function mapItem(item: {
 }
 
 export default async function Home() {
-  let featured: MenuItem[] = [];
-  let vendors: VendorPublic[] = [];
-
-  try {
-    const [featuredRaw, vendorsRaw] = await Promise.all([
-      prisma.menuItem.findMany({
-        where: { available: true, vendor: { status: 'APPROVED' } },
-        include: {
-          vendor: {
-            select: {
-              id: true,
-              businessName: true,
-              slug: true,
-              ...VENDOR_HOURS_SELECT,
-            },
+  const [featuredRaw, vendorsRaw] = await Promise.all([
+    prisma.menuItem.findMany({
+      where: { available: true, vendor: { status: 'APPROVED' } },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            businessName: true,
+            slug: true,
+            ...VENDOR_HOURS_SELECT,
           },
         },
-        orderBy: { createdAt: 'desc' },
-        take: 48,
-      }),
-      prisma.vendor.findMany({
-        where: { status: 'APPROVED' },
-        orderBy: { businessName: 'asc' },
-        select: {
-          id: true,
-          businessName: true,
-          slug: true,
-          description: true,
-          logo: true,
-          phone: true,
-          address: true,
-          ...VENDOR_HOURS_SELECT,
-          _count: { select: { menuItems: { where: { available: true } } } },
-        },
-      }),
-    ]);
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 48,
+    }),
+    prisma.vendor.findMany({
+      where: { status: 'APPROVED' },
+      orderBy: { businessName: 'asc' },
+      select: {
+        id: true,
+        businessName: true,
+        slug: true,
+        description: true,
+        logo: true,
+        phone: true,
+        address: true,
+        ...VENDOR_HOURS_SELECT,
+        _count: { select: { menuItems: { where: { available: true } } } },
+      },
+    }),
+  ]);
 
-    // Favourites: open vendors only. Prefer BESTSELLER, then newest.
-    const withBadges = featuredRaw.map(mapItem).filter(isMenuFromOpenVendor);
-    const bestsellers = withBadges.filter((i) =>
-      i.badges.includes('BESTSELLER')
-    );
-    const rest = withBadges.filter((i) => !i.badges.includes('BESTSELLER'));
-    featured = [...bestsellers, ...rest].slice(0, 6);
-    vendors = sortVendorsOpenFirst(vendorsRaw as VendorPublic[]).slice(0, 6);
-  } catch (err) {
-    console.error('Home page data failed', err);
-  }
+  // Favourites: open vendors only. Prefer BESTSELLER, then newest.
+  const withBadges = featuredRaw.map(mapItem).filter(isMenuFromOpenVendor);
+  const bestsellers = withBadges.filter((i) =>
+    i.badges.includes('BESTSELLER')
+  );
+  const rest = withBadges.filter((i) => !i.badges.includes('BESTSELLER'));
+  const featured = [...bestsellers, ...rest].slice(0, 6);
+  const vendors = sortVendorsOpenFirst(vendorsRaw as VendorPublic[]).slice(0, 6);
 
   return (
     <SiteShell>
