@@ -1,10 +1,11 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { formatMYR } from '@/lib/pricing';
 import { useLivePoll } from '@/lib/use-live-poll';
+import { useVendorOpenSync } from '@/lib/vendor-open-sync';
 import VendorAvailabilityPanel from '@/components/vendor/availability/VendorAvailabilityPanel';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -54,6 +55,11 @@ export default function VendorDashboardLive() {
     seen.current = new Set(ids);
     setLive(data);
   }, 4000);
+
+  const onOpenSync = useCallback((accepting: boolean) => {
+    setLive((prev) => (prev ? { ...prev, accepting } : prev));
+  }, []);
+  useVendorOpenSync(onOpenSync);
 
   const accepting = live?.accepting ?? false;
   const newOrders = live?.newOrders ?? 0;

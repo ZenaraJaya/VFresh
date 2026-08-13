@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { broadcastVendorOpen } from '@/lib/vendor-open-sync';
 import {
   DAY_KEYS,
   DAY_LABELS,
@@ -79,6 +80,7 @@ export default function VendorAvailabilityPanel() {
     closeTime: null,
     weeklyHours: null,
   });
+  const patchGen = useRef(0);
 
   const applyFromServer = (data: {
     isOpen: boolean;
@@ -154,7 +156,7 @@ export default function VendorAvailabilityPanel() {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/vendor/availability');
+      const res = await fetch('/api/vendor/availability', { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
       applyFromServer(data);
@@ -172,25 +174,48 @@ export default function VendorAvailabilityPanel() {
   }, []);
 
   const patch = async (body: Record<string, unknown>) => {
+    const id = patchGen.current;
     setSaving(true);
     try {
       const res = await fetch('/api/vendor/availability', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        cache: 'no-store',
       });
       const data = await res.json();
       if (!res.ok) {
         toast.error(data.error || 'Update failed');
         return null;
       }
+      if (id !== patchGen.current) return data;
       applyFromServer(data);
+      if (typeof data.accepting === 'boolean') {
+        broadcastVendorOpen(data.accepting);
+      }
       return data;
     } catch {
       toast.error('Update failed');
       return null;
     } finally {
-      setSaving(false);
+      if (id === patchGen.current) setSaving(false);
+    }
+  };
+
+  const setManualOpen = async (next: boolean) => {
+    const id = ++patchGen.current;
+    setIsOpen(next);
+    setFollowSchedule(false);
+    setAccepting(next);
+    setStatusDetail(next ? 'Manual open' : 'Manual close');
+    broadcastVendorOpen(next);
+
+    const data = await patch({ isOpen: next });
+    if (id !== patchGen.current) return;
+    if (data) {
+      toast.success(next ? 'Open now (manual)' : 'Closed now (manual)');
+    } else {
+      await load();
     }
   };
 
@@ -326,12 +351,8 @@ export default function VendorAvailabilityPanel() {
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <button
           type="button"
-          disabled={saving}
-          onClick={async () => {
-            const data = await patch({ isOpen: true });
-            if (data) toast.success('Open now (manual)');
-          }}
-          className={`rounded-xl px-4 py-3 text-sm font-semibold transition disabled:opacity-60 ${
+          onClick={() => void setManualOpen(true)}
+          className={`rounded-xl px-4 py-3 text-sm font-semibold transition ${
             accepting
               ? 'bg-emerald-500 text-white ring-2 ring-emerald-500 ring-offset-2 dark:ring-offset-neutral-900'
               : 'border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200'
@@ -341,12 +362,8 @@ export default function VendorAvailabilityPanel() {
         </button>
         <button
           type="button"
-          disabled={saving}
-          onClick={async () => {
-            const data = await patch({ isOpen: false });
-            if (data) toast.success('Closed now (manual)');
-          }}
-          className={`rounded-xl px-4 py-3 text-sm font-semibold transition disabled:opacity-60 ${
+          onClick={() => void setManualOpen(false)}
+          className={`rounded-xl px-4 py-3 text-sm font-semibold transition ${
             !accepting
               ? 'bg-amber-500 text-white ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-neutral-900'
               : 'border border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200'

@@ -13,6 +13,8 @@ import {
   VENDOR_HOURS_SELECT,
 } from '@/lib/vendor-availability';
 
+export const dynamic = 'force-dynamic';
+
 async function requireApprovedVendor() {
   const session = await getServerSession(authOptions);
   if (

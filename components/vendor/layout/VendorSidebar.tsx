@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import { isVendorAcceptingOrders, type VendorHours } from '@/lib/vendor-availability';
 import { useLivePoll } from '@/lib/use-live-poll';
-import { useState } from 'react';
+import { useVendorOpenSync } from '@/lib/vendor-open-sync';
+import { useCallback, useState } from 'react';
 
 const NAV = [
   { href: '/vendor', label: 'Home', icon: LayoutDashboard },
@@ -43,6 +44,11 @@ export default function VendorSidebar({
       status,
     })
   );
+
+  const onOpenSync = useCallback((next: boolean) => {
+    setAccepting(next);
+  }, []);
+  useVendorOpenSync(onOpenSync);
 
   useLivePoll(async () => {
     const res = await fetch('/api/vendor/availability', { cache: 'no-store' });
