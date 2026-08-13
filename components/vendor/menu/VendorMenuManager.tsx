@@ -216,7 +216,7 @@ export default function VendorMenuManager() {
           </h1>
           <p className="mt-1 text-sm text-neutral-500">
             What customers see and can add to cart. Set today’s packs when you
-            open — leftover goes down when the customer taps Receive.
+            open — leftover goes down when the delivery person taps Complete.
           </p>
         </div>
         <button
@@ -564,8 +564,8 @@ export default function VendorMenuManager() {
               </div>
             </div>
             <p className="-mt-2 text-xs text-neutral-500">
-              Optional. Customers cannot add more than leftover. Receive deducts
-              leftover automatically.
+              Optional. Customers cannot add more than leftover. Complete
+              (delivery) deducts leftover automatically.
             </p>
             <label className="flex items-center gap-2 rounded-xl border border-neutral-200 px-3 py-2.5 text-sm dark:border-neutral-700">
               <input

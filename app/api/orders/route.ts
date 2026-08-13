@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
+import { authOptions } from '@/lib/auth';
 import { calculateTotals, toMoney } from '@/lib/pricing';
 import { isVendorAcceptingOrders } from '@/lib/vendor-availability';
 import { assertSellableForCheckout } from '@/lib/daily-pack';
 import { newOrderNumber } from '@/lib/order-number';
+import { createStandingOrders } from '@/lib/standing-orders';
 
 const orderSchema = z.object({
   companyId: z.string().min(1),
@@ -17,6 +20,7 @@ const orderSchema = z.object({
   deliveryTime: z.string().max(40).optional().or(z.literal('')),
   specialInstructions: z.string().max(1000).optional().or(z.literal('')),
   paymentMethod: z.enum(['COMPANY_ACCOUNT', 'CREDIT_CARD']).default('COMPANY_ACCOUNT'),
+  repeatWeekly: z.boolean().optional(),
   items: z
     .array(
       z.object({
@@ -32,8 +36,18 @@ function nullIfBlank(value: string | undefined) {
   return value && value.trim() !== '' ? value.trim() : null;
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'CUSTOMER') {
+      return NextResponse.json(
+        { error: 'Sign in or register to place an order' },
+        { status: 401 }
+      );
+    }
+
     const parsed = orderSchema.safeParse(await req.json());
 
     if (!parsed.success) {
@@ -45,12 +59,27 @@ export async function POST(req: NextRequest) {
 
     const data = parsed.data;
 
+    const me = await prisma.customer.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, companyId: true, email: true, name: true },
+    });
+    if (!me) {
+      return NextResponse.json({ error: 'Account not found' }, { status: 401 });
+    }
+
     const company = await prisma.company.findFirst({
       where: { id: data.companyId, isActive: true },
     });
     if (!company) {
       return NextResponse.json(
         { error: 'Company account not found or inactive' },
+        { status: 400 }
+      );
+    }
+
+    if (me.companyId && me.companyId !== company.id) {
+      return NextResponse.json(
+        { error: 'Orders must use your registered company' },
         { status: 400 }
       );
     }
@@ -114,8 +143,10 @@ export async function POST(req: NextRequest) {
 
     const shared = {
       companyId: company.id,
+      customerId: me.id,
       employeeName: data.employeeName.trim(),
-      employeeEmail: nullIfBlank(data.employeeEmail),
+      employeeEmail:
+        nullIfBlank(data.employeeEmail) ?? session.user.email ?? null,
       employeePhone: nullIfBlank(data.employeePhone),
       department: nullIfBlank(data.department),
       deliveryLocation: data.deliveryLocation.trim(),
@@ -161,6 +192,40 @@ export async function POST(req: NextRequest) {
       })
     );
 
+    if (data.repeatWeekly) {
+      try {
+      const [y, mo, day] = data.deliveryDate.split('-').map(Number);
+      const weekday = new Date(Date.UTC(y, mo - 1, day)).getUTCDay();
+      await createStandingOrders({
+        weekday,
+        firstDeliveryYmd: data.deliveryDate.slice(0, 10),
+        companyId: company.id,
+        customerId: me.id,
+        employeeName: shared.employeeName,
+        employeeEmail: shared.employeeEmail,
+        employeePhone: shared.employeePhone,
+        department: shared.department,
+        deliveryLocation: shared.deliveryLocation,
+        deliveryTime: shared.deliveryTime,
+        specialInstructions: shared.specialInstructions,
+        paymentMethod: data.paymentMethod,
+        kitchens: [...byVendor.entries()].map(([vendorId, vendorItems]) => ({
+          vendorId,
+          items: vendorItems.map((m) => {
+            const q = qtyNotes.get(m.id)!;
+            return {
+              menuItemId: m.id,
+              quantity: q.quantity,
+              notes: q.notes,
+            };
+          }),
+        })),
+      });
+      } catch (err) {
+        console.error('standing order save failed', err);
+      }
+    }
+
     return NextResponse.json(
       {
         orders: created,
@@ -202,7 +267,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    return NextResponse.json(order);
+    return NextResponse.json(order, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to fetch order' },

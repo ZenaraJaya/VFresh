@@ -36,14 +36,28 @@ const adapter = new PrismaNeon({
   idleTimeoutMillis: 30_000,
 });
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+function makePrisma() {
+  return new PrismaClient({
     adapter,
     log:
       process.env.NODE_ENV === 'development'
         ? ['query', 'error', 'warn']
         : ['error'],
   });
+}
+
+function clientLooksCurrent(client: PrismaClient) {
+  return (
+    typeof client.recurringOrder?.findMany === 'function' &&
+    typeof client.customer?.findMany === 'function'
+  );
+}
+
+let prisma = globalForPrisma.prisma ?? makePrisma();
+if (!clientLooksCurrent(prisma)) {
+  prisma = makePrisma();
+}
+
+export { prisma };
 
 globalForPrisma.prisma = prisma;

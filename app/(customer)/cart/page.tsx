@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, ShoppingBag } from 'lucide-react';
 import CartItem from '@/components/customer/cart/CartItem';
+import CheckoutLink from '@/components/customer/auth/CheckoutLink';
 import { useCart } from '@/context/CartContext';
 import { groupCartByVendor } from '@/lib/group-cart';
 import { formatMYR, FREE_DELIVERY_THRESHOLD } from '@/lib/pricing';
@@ -136,12 +137,9 @@ export default function CartPage() {
             <span className="text-xl font-bold">{formatMYR(displayTotal)}</span>
           </div>
 
-          <Link
-            href="/checkout"
-            className="mt-6 block rounded-xl bg-emerald-500 px-4 py-3 text-center font-medium text-white transition hover:bg-emerald-600"
-          >
+          <CheckoutLink className="mt-6 block rounded-xl bg-emerald-500 px-4 py-3 text-center font-medium text-white transition hover:bg-emerald-600">
             Proceed to checkout
-          </Link>
+          </CheckoutLink>
         </aside>
       </div>
     </div>

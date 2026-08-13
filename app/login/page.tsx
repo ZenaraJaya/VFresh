@@ -8,6 +8,7 @@ import { Leaf, Loader2, Lock, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PasswordInput from '@/components/shared/ui/PasswordInput';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
+import { safeCallbackPath } from '@/lib/safe-callback';
 
 type RoleTab = 'customer' | 'vendor' | 'admin';
 
@@ -68,9 +69,11 @@ function LoginForm() {
     const session = await sessionRes.json();
     const role = session?.user?.role as string | undefined;
     const vendorStatus = session?.user?.vendorStatus as string | undefined;
+    const callback = safeCallbackPath(searchParams.get('callbackUrl'));
     const dest =
-      searchParams.get('callbackUrl') ||
-      homeForRole(role ?? 'CUSTOMER', vendorStatus);
+      role === 'CUSTOMER' && callback
+        ? callback
+        : homeForRole(role ?? 'CUSTOMER', vendorStatus);
 
     toast.success('Welcome back');
     router.push(dest);
@@ -106,6 +109,9 @@ function LoginForm() {
         <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
           Sign in
         </h1>
+        <p className="text-sm text-neutral-500">
+          You need an account to order.
+        </p>
       </div>
 
       <div className="space-y-1">
@@ -186,16 +192,21 @@ function LoginForm() {
       </div>
 
       <p className="text-center text-sm text-neutral-500">
-        New vendor?{' '}
+        New here?{' '}
         <Link
-          href="/vendor/signup"
+          href={`/register${searchParams.get('callbackUrl') ? `?callbackUrl=${encodeURIComponent(searchParams.get('callbackUrl')!)}` : ''}`}
           className="font-medium text-emerald-600 hover:underline"
         >
           Register
         </Link>
-        <span className="block text-xs text-neutral-400">
-          Admin approves and emails your temporary password.
-        </span>
+        {' · '}
+        Kitchen?{' '}
+        <Link
+          href="/vendor/signup"
+          className="font-medium text-emerald-600 hover:underline"
+        >
+          Vendor register
+        </Link>
       </p>
     </form>
   );

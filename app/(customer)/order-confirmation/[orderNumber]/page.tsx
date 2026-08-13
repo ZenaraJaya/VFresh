@@ -4,18 +4,10 @@ import { notFound } from 'next/navigation';
 import { CalendarDays, CheckCircle2, Clock, MapPin, Receipt } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { formatMYR } from '@/lib/pricing';
-import OrderReceiveButton from '@/components/customer/orders/OrderReceiveButton';
+import OrderDeliveryNote from '@/components/customer/orders/OrderDeliveryNote';
+import OrderProgress from '@/components/customer/orders/OrderProgress';
 
 export const dynamic = 'force-dynamic';
-
-const STATUS_LABEL: Record<string, string> = {
-  PENDING: 'Received',
-  CONFIRMED: 'Confirmed',
-  PREPARING: 'Being prepared',
-  READY: 'Ready for delivery',
-  DELIVERED: 'Delivered',
-  CANCELLED: 'Cancelled'
-};
 
 export default async function OrderConfirmationPage({
   params
@@ -36,18 +28,29 @@ export default async function OrderConfirmationPage({
   if (!order) notFound();
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-12">
+    <div className="mx-auto w-full min-w-0 max-w-3xl px-3 py-8 sm:px-4 sm:py-12">
       <div className="mb-8 text-center">
-        <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-emerald-500" />
-        <h1 className="text-3xl font-bold tracking-tight">Order placed</h1>
-        <p className="mt-2 text-neutral-600 dark:text-neutral-400">
+        <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-emerald-500 sm:h-14 sm:w-14" />
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Order placed</h1>
+        <p className="mt-2 text-sm text-neutral-600 sm:text-base dark:text-neutral-400">
           {order.vendor
             ? `${order.vendor.businessName} has your order. Keep this number handy.`
             : "We've sent the kitchen your order. Keep this number handy."}
         </p>
-        <p className="mt-4 inline-block rounded-xl bg-neutral-100 px-4 py-2 font-mono text-lg font-semibold dark:bg-neutral-800">
+        <p className="mt-4 inline-block max-w-full break-all rounded-xl bg-neutral-100 px-3 py-2 font-mono text-sm font-semibold sm:px-4 sm:text-lg dark:bg-neutral-800">
           {order.orderNumber}
         </p>
+      </div>
+
+      <div className="mb-6">
+        <h2 className="mb-3 text-center text-sm font-semibold uppercase tracking-wide text-neutral-500">
+          Progress
+        </h2>
+        <OrderProgress
+          orderNumber={order.orderNumber}
+          initialStatus={order.status}
+          initialStockDeducted={order.stockDeducted}
+        />
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
@@ -87,16 +90,11 @@ export default async function OrderConfirmationPage({
                 ? "Added to this month's invoice"
                 : 'Paid by card'}
             </li>
-            <li>
-              <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
-                {STATUS_LABEL[order.status] ?? order.status}
-              </span>
-            </li>
           </ul>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-neutral-200 p-6 dark:border-neutral-800">
+      <div className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800 sm:p-6">
         <h2 className="mb-4 text-lg font-semibold">
           {order.vendor
             ? `${order.vendor.businessName} · ${order.employeeName}`
@@ -157,14 +155,13 @@ export default async function OrderConfirmationPage({
       </div>
 
       <div className="mt-8 flex flex-col items-center gap-4 text-center">
-        <OrderReceiveButton
+        <OrderDeliveryNote
           orderNumber={order.orderNumber}
           status={order.status}
-          stockDeducted={order.stockDeducted}
         />
         <Link
           href="/menu"
-          className="inline-block rounded-xl border border-neutral-200 px-6 py-3 font-medium transition hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
+          className="inline-block w-full max-w-sm rounded-xl border border-neutral-200 px-6 py-3 font-medium transition hover:bg-neutral-50 sm:w-auto dark:border-neutral-700 dark:hover:bg-neutral-800"
         >
           Order something else
         </Link>

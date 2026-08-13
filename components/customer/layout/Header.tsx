@@ -1,22 +1,50 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Leaf, Menu as MenuIcon, ShoppingBag, X } from 'lucide-react';
+import HeaderAuth, { HeaderAuthMobile } from './HeaderAuth';
 import Navigation from './Navigation';
 import CartSidebar from '@/components/customer/cart/CartSidebar';
 import { useCart } from '@/context/CartContext';
 
+const LG = 1024;
+
 export default function Header() {
   const { count, hydrated } = useCart();
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+
+  const closeMenu = () => setMobileOpen(false);
+
+  useEffect(() => {
+    closeMenu();
+  }, [pathname]);
+
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= LG) closeMenu();
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeMenu();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [mobileOpen]);
 
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/85 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/85">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
+        <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+          <Link href="/" className="flex items-center gap-2" onClick={closeMenu}>
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 text-white">
               <Leaf className="h-5 w-5" />
             </span>
@@ -27,13 +55,14 @@ export default function Header() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setCartOpen(true)}
+              onClick={() => {
+                closeMenu();
+                setCartOpen(true);
+              }}
               aria-label="Open cart"
               className="relative rounded-xl p-2 transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
             >
               <ShoppingBag className="h-5 w-5" />
-              {/* Suppress the badge until the stored cart is read, so SSR and
-                  the first client render agree. */}
               {hydrated && count > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[11px] font-bold text-white">
                   {count}
@@ -41,24 +70,21 @@ export default function Header() {
               )}
             </button>
 
-            <Link
-              href="/login"
-              className="hidden rounded-xl border border-neutral-200 px-3 py-2 text-sm font-medium transition hover:bg-neutral-50 sm:block dark:border-neutral-700 dark:hover:bg-neutral-800"
-            >
-              Sign Up / Login
-            </Link>
+            <HeaderAuth />
 
             <Link
               href="/menu"
-              className="hidden rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-600 sm:block"
+              className="hidden rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-600 lg:block"
             >
               Order now
             </Link>
 
             <button
+              type="button"
               onClick={() => setMobileOpen((v) => !v)}
-              aria-label="Toggle navigation"
-              className="rounded-xl p-2 transition hover:bg-neutral-100 md:hidden dark:hover:bg-neutral-800"
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileOpen}
+              className="rounded-xl p-2 transition hover:bg-neutral-100 lg:hidden dark:hover:bg-neutral-800"
             >
               {mobileOpen ? (
                 <X className="h-5 w-5" />
@@ -67,22 +93,24 @@ export default function Header() {
               )}
             </button>
           </div>
-        </div>
 
-        {mobileOpen && (
-          <div className="border-t border-neutral-200 px-4 py-3 md:hidden dark:border-neutral-800">
-            <Navigation vertical onNavigate={() => setMobileOpen(false)} />
-            <div className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-800">
-              <Link
-                href="/login"
-                onClick={() => setMobileOpen(false)}
-                className="block rounded-xl bg-emerald-500 px-3 py-2.5 text-center text-sm font-medium text-white transition hover:bg-emerald-600"
-              >
-                Sign Up / Login
-              </Link>
+          {mobileOpen && (
+            <div className="lg:hidden">
+              <button
+                type="button"
+                aria-label="Close menu"
+                className="fixed inset-x-0 top-16 bottom-0 z-40 bg-black/25"
+                onClick={closeMenu}
+              />
+              <div className="absolute right-4 top-full z-50 mt-2 w-[min(17.5rem,calc(100vw-2rem))] rounded-2xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-800 dark:bg-neutral-950">
+                <Navigation vertical onNavigate={closeMenu} />
+                <div className="mt-1 border-t border-neutral-200 p-2 dark:border-neutral-800">
+                  <HeaderAuthMobile onNavigate={closeMenu} />
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </header>
 
       <CartSidebar open={cartOpen} onClose={() => setCartOpen(false)} />

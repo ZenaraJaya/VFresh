@@ -39,7 +39,7 @@ export default function Navigation({ vertical, onNavigate }: NavigationProps) {
       className={
         vertical
           ? 'grid grid-cols-1 gap-1'
-          : 'hidden md:grid md:grid-cols-5 md:items-center md:gap-1'
+          : 'hidden lg:grid lg:grid-cols-5 lg:items-center lg:gap-1'
       }
     >
       {NAV_LINKS.map((link) => {
@@ -50,7 +50,9 @@ export default function Navigation({ vertical, onNavigate }: NavigationProps) {
             key={link.href}
             href={link.href}
             onClick={onNavigate}
-            className={`flex items-center justify-center rounded-lg px-2 py-2 text-center text-sm font-medium ${
+            className={`flex items-center rounded-lg px-3 py-2.5 text-sm font-medium ${
+              vertical ? 'justify-start' : 'justify-center text-center'
+            } ${
               active
                 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
                 : 'text-neutral-600 hover:bg-emerald-50 hover:text-emerald-800 dark:text-neutral-300 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-200'

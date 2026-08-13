@@ -12,8 +12,8 @@ const STATUS_LABEL: Record<string, string> = {
   PENDING: 'New',
   CONFIRMED: 'Confirmed',
   PREPARING: 'Preparing',
-  READY: 'Ready',
-  DELIVERED: 'Delivered',
+  READY: 'On the way',
+  DELIVERED: 'Complete',
   CANCELLED: 'Cancelled',
 };
 
@@ -23,6 +23,8 @@ type Recent = {
   employeeName: string;
   status: string;
   total: number;
+  deliveryDate?: string;
+  deliveryTime?: string | null;
   items: { quantity: number; menuItem: { name: string } }[];
 };
 
@@ -126,7 +128,7 @@ export default function VendorDashboardLive() {
 
       <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="font-semibold">Latest orders</h2>
+          <h2 className="font-semibold">Up next</h2>
           <Link
             href="/vendor/orders"
             className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
@@ -150,7 +152,11 @@ export default function VendorDashboardLive() {
                     {order.orderNumber}
                   </p>
                   <p className="truncate text-xs text-neutral-500">
-                    {order.employeeName} ·{' '}
+                    {order.deliveryDate
+                      ? String(order.deliveryDate).slice(0, 10)
+                      : ''}
+                    {order.deliveryTime ? ` · ${order.deliveryTime}` : ''}
+                    {order.employeeName ? ` · ${order.employeeName}` : ''} ·{' '}
                     {order.items
                       .map((i) => `${i.quantity}× ${i.menuItem.name}`)
                       .join(', ')}

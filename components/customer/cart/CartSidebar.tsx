@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 import { ShoppingBag, X } from 'lucide-react';
 import CartItem from './CartItem';
+import CheckoutLink from '@/components/customer/auth/CheckoutLink';
 import { useCart } from '@/context/CartContext';
 import { formatMYR } from '@/lib/pricing';
 
@@ -96,13 +97,12 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               Tax and delivery are calculated at checkout.
             </p>
-            <Link
-              href="/checkout"
+            <CheckoutLink
               onClick={onClose}
               className="block rounded-xl bg-emerald-500 px-4 py-3 text-center font-medium text-white transition hover:bg-emerald-600"
             >
               Checkout
-            </Link>
+            </CheckoutLink>
             <div className="flex items-center justify-between text-sm">
               <Link
                 href="/cart"

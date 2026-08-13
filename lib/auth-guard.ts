@@ -35,3 +35,13 @@ export async function requireVendor() {
 
   return session;
 }
+
+export async function requireCustomer(callbackUrl = '/checkout') {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user.role !== 'CUSTOMER') {
+    redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  }
+
+  return session;
+}

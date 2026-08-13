@@ -5,6 +5,8 @@ import { Loader2 } from 'lucide-react';
 import { useLivePoll } from '@/lib/use-live-poll';
 import toast from 'react-hot-toast';
 import { formatMYR } from '@/lib/pricing';
+import { deliveryDayLabel } from '@/lib/order-priority';
+import { miriYmd, ymdFromValue } from '@/lib/miri-date';
 import type { OrderStatus } from '@/types';
 
 type Row = {
@@ -12,6 +14,8 @@ type Row = {
   orderNumber: string;
   employeeName: string;
   deliveryLocation: string;
+  deliveryDate: string;
+  deliveryTime: string | null;
   status: OrderStatus;
   total: number;
   createdAt: string;
@@ -28,12 +32,24 @@ const STATUSES: OrderStatus[] = [
   'CANCELLED',
 ];
 
+function groupOrders(orders: Row[]) {
+  const today = miriYmd();
+  const map = new Map<string, Row[]>();
+  for (const order of orders) {
+    const label = deliveryDayLabel(order.deliveryDate, today);
+    const list = map.get(label) ?? [];
+    list.push(order);
+    map.set(label, list);
+  }
+  return [...map.entries()];
+}
+
 const STATUS_LABEL: Record<string, string> = {
   PENDING: 'New',
   CONFIRMED: 'Confirmed',
   PREPARING: 'Preparing',
-  READY: 'Ready',
-  DELIVERED: 'Delivered',
+  READY: 'On the way',
+  DELIVERED: 'Complete',
   CANCELLED: 'Cancelled',
 };
 
@@ -99,7 +115,8 @@ export default function VendorOrdersBoard() {
           Orders
         </h1>
         <p className="mt-1 text-sm text-neutral-500">
-          Updates live as customers order. No need to refresh.
+          Earliest delivery first, then time. When you hand it to the customer,
+          tap Complete.
         </p>
       </div>
 
@@ -112,8 +129,14 @@ export default function VendorOrdersBoard() {
           No orders yet. When customers buy your dishes, they show up here.
         </p>
       ) : (
-        <ul className="space-y-3">
-          {orders.map((order) => (
+        <div className="space-y-8">
+          {groupOrders(orders).map(([label, group]) => (
+            <section key={label}>
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+                {label}
+              </h2>
+              <ul className="space-y-3">
+                {group.map((order) => (
             <li
               key={order.id}
               className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 sm:p-5"
@@ -131,6 +154,9 @@ export default function VendorOrdersBoard() {
                     </span>
                   </p>
                   <p className="mt-0.5 text-xs text-neutral-500">
+                    {ymdFromValue(order.deliveryDate)}
+                    {order.deliveryTime ? ` · ${order.deliveryTime}` : ''}
+                    {' · '}
                     {order.deliveryLocation}
                   </p>
                 </div>
@@ -151,7 +177,7 @@ export default function VendorOrdersBoard() {
                     onClick={() => setStatus(order.id, 'DELIVERED')}
                     className="rounded-xl bg-emerald-500 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-60"
                   >
-                    Receive
+                    Complete
                   </button>
                 )}
                 <label className="text-xs font-medium text-neutral-500">
@@ -173,8 +199,11 @@ export default function VendorOrdersBoard() {
                 </select>
               </div>
             </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

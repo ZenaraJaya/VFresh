@@ -96,7 +96,7 @@ async function restoreLines(tx: Tx, items: { menuItemId: string; quantity: numbe
   }
 }
 
-/** Customer or vendor Receive: leftover packs go down, order marked delivered. */
+/** Delivery person Complete: leftover packs go down, order marked delivered. */
 export async function markOrderReceived(orderId: string) {
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({

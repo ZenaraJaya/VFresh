@@ -62,6 +62,7 @@ export const authOptions: NextAuthOptions = {
           email: customer.email,
           name: customer.name ?? customer.email,
           role: 'CUSTOMER',
+          companyId: customer.companyId ?? undefined,
         };
         } catch (error) {
           console.error('Sign-in failed', error);
@@ -71,11 +72,23 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
-        const u = user as { role?: string; vendorStatus?: string };
+        const u = user as {
+          role?: string;
+          vendorStatus?: string;
+          companyId?: string;
+        };
         token.role = u.role ?? 'CUSTOMER';
         token.vendorStatus = u.vendorStatus;
+        token.companyId = u.companyId;
+      }
+
+      if (trigger === 'update' && session && token.role === 'CUSTOMER') {
+        const next = session as { name?: string };
+        if (typeof next.name === 'string' && next.name.trim()) {
+          token.name = next.name.trim();
+        }
       }
 
       // Keep vendor approval in sync so an approved kitchen is not stuck
@@ -92,6 +105,21 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
+      if (token.role === 'CUSTOMER' && token.sub) {
+        try {
+          const customer = await prisma.customer.findUnique({
+            where: { id: token.sub },
+            select: { companyId: true, name: true },
+          });
+          if (customer) {
+            token.companyId = customer.companyId ?? undefined;
+            if (customer.name) token.name = customer.name;
+          }
+        } catch (error) {
+          console.error('Customer session refresh failed', error);
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -99,6 +127,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub ?? '';
         session.user.role = (token.role as string) ?? 'CUSTOMER';
         session.user.vendorStatus = token.vendorStatus as string | undefined;
+        session.user.companyId = token.companyId;
       }
       return session;
     },

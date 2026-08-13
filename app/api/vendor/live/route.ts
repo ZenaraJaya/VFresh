@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { isVendorAcceptingOrders } from '@/lib/vendor-availability';
+import { materializeStandingOrders } from '@/lib/standing-orders';
+import { compareDeliveryPriority } from '@/lib/order-priority';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,8 +19,13 @@ export async function GET() {
   }
 
   const vendorId = session.user.id;
+  try {
+    await materializeStandingOrders(vendorId);
+  } catch (err) {
+    console.error('standing orders', err);
+  }
 
-  const [vendor, menuCount, availableCount, newOrders, recentOrders] =
+  const [vendor, menuCount, availableCount, newOrders, upcoming] =
     await Promise.all([
       prisma.vendor.findUnique({ where: { id: vendorId } }),
       prisma.menuItem.count({ where: { vendorId } }),
@@ -32,9 +39,11 @@ export async function GET() {
         },
       }),
       prisma.order.findMany({
-        where: { vendorId },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
+        where: {
+          vendorId,
+          status: { notIn: ['DELIVERED', 'CANCELLED'] },
+        },
+        take: 40,
         include: {
           items: { include: { menuItem: { select: { name: true } } } },
         },
@@ -53,6 +62,6 @@ export async function GET() {
     menuCount,
     availableCount,
     newOrders,
-    recentOrders,
+    recentOrders: upcoming.sort(compareDeliveryPriority).slice(0, 5),
   });
 }

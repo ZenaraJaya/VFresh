@@ -7,11 +7,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useSession } from 'next-auth/react';
 import PaymentForm from './PaymentForm';
 import { useCart } from '@/context/CartContext';
 import { groupCartByVendor } from '@/lib/group-cart';
 import type { PaymentMethod } from '@/types';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
+import { weekdayName } from '@/lib/miri-date';
 
 const schema = z.object({
   companyId: z.string().min(1, 'Select your company'),
@@ -22,7 +24,8 @@ const schema = z.object({
   deliveryLocation: z.string().min(1, 'Where should we deliver?'),
   deliveryDate: z.string().min(1, 'Pick a date'),
   deliveryTime: z.string().optional(),
-  specialInstructions: z.string().max(1000).optional()
+  specialInstructions: z.string().max(1000).optional(),
+  repeatWeekly: z.boolean().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -32,6 +35,13 @@ function todayISO() {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 10);
+}
+
+function weekdayFromYmd(ymd?: string) {
+  if (!ymd) return 0;
+  const [y, m, d] = ymd.split('-').map(Number);
+  if (!y || !m || !d) return 0;
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
 export default function CheckoutForm() {
@@ -47,11 +57,45 @@ export default function CheckoutForm() {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors }
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { deliveryDate: todayISO(), employeeEmail: '' }
+    defaultValues: { deliveryDate: todayISO(), employeeEmail: '', repeatWeekly: false }
   });
+
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    if (session?.user?.name) {
+      setValue('employeeName', session.user.name);
+    }
+    if (session?.user?.email) {
+      setValue('employeeEmail', session.user.email);
+    }
+    if (session?.user?.companyId) {
+      setValue('companyId', session.user.companyId);
+    }
+  }, [session, setValue]);
+
+  useEffect(() => {
+    if (session?.user?.role !== 'CUSTOMER') return;
+    fetch('/api/account/profile')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((profile) => {
+        if (!profile) return;
+        if (profile.phone) setValue('employeePhone', profile.phone);
+        if (profile.paymentMethod === 'COMPANY_ACCOUNT' || profile.paymentMethod === 'CREDIT_CARD') {
+          setPaymentMethod(profile.paymentMethod);
+        }
+      })
+      .catch(() => {});
+  }, [session, setValue]);
+
+  const deliveryDate = watch('deliveryDate');
+  const repeatWeekly = watch('repeatWeekly');
+  const deliveryWeekday = weekdayFromYmd(deliveryDate);
 
   useEffect(() => {
     fetch('/api/companies')
@@ -63,6 +107,11 @@ export default function CheckoutForm() {
   const onSubmit = async (values: FormValues) => {
     if (lines.length === 0) {
       toast.error('Your cart is empty');
+      return;
+    }
+
+    if (values.repeatWeekly && !values.employeeEmail?.trim()) {
+      toast.error('Add your email so you can stop the weekly order later');
       return;
     }
 
@@ -129,14 +178,24 @@ export default function CheckoutForm() {
             Company account
             <RequiredMark />
           </label>
-          <select id="companyId" {...register('companyId')} className={inputClass}>
-            <option value="">Select a company…</option>
-            {companies.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          {session?.user?.companyId ? (
+            <>
+              <input type="hidden" {...register('companyId')} />
+              <p className={`${inputClass} bg-neutral-50 dark:bg-neutral-900`}>
+                {companies.find((c) => c.id === session.user.companyId)?.name ??
+                  'Your company'}
+              </p>
+            </>
+          ) : (
+            <select id="companyId" {...register('companyId')} className={inputClass}>
+              <option value="">Select a company…</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          )}
           {errors.companyId && (
             <p className={errorClass}>{errors.companyId.message}</p>
           )}
@@ -271,6 +330,23 @@ export default function CheckoutForm() {
             </select>
           </div>
         </div>
+
+        <label className="flex items-start gap-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 rounded border-neutral-300"
+            {...register('repeatWeekly')}
+          />
+          <span className="text-sm">
+            Repeat this order every {weekdayName(deliveryWeekday)} until I stop
+            it
+            <span className="mt-1 block text-xs text-neutral-500">
+              {repeatWeekly
+                ? 'We will place the same dishes for this kitchen each week. Use Track order + your email to stop.'
+                : 'Useful if you always want lunch on the same weekday.'}
+            </span>
+          </span>
+        </label>
 
         <div>
           <label

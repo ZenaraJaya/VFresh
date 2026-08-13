@@ -72,18 +72,27 @@ model Vendor {
 
   menuItems MenuItem[]
   orders    Order[]
+  recurringOrders RecurringOrder[]
 
   @@map("vendors")
 }
 
 model Customer {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  name          String?
+  phone         String?
+  companyId     String?
+  paymentMethod PaymentMethod  @default(COMPANY_ACCOUNT)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
+  company         Company?         @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  orders          Order[]
+  recurringOrders RecurringOrder[]
+
+  @@index([companyId])
   @@map("customers")
 }
 
@@ -99,6 +108,8 @@ model Company {
 
   orders   Order[]
   invoices Invoice[]
+  recurringOrders RecurringOrder[]
+  customers Customer[]
 
   @@map("companies")
 }
@@ -131,6 +142,7 @@ model Order {
   orderNumber         String        @unique @default(dbgenerated())
   companyId           String
   vendorId            String?
+  customerId          String?
   employeeName        String
   employeeEmail       String?
   employeePhone       String?
@@ -153,12 +165,46 @@ model Order {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
-  company Company     @relation(fields: [companyId], references: [id])
-  vendor  Vendor?     @relation(fields: [vendorId], references: [id], onDelete: SetNull)
-  items   OrderItem[]
-  invoice Invoice?    @relation(fields: [invoiceId], references: [id])
+  company  Company     @relation(fields: [companyId], references: [id])
+  vendor   Vendor?     @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  customer Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items    OrderItem[]
+  invoice  Invoice?    @relation(fields: [invoiceId], references: [id])
+
+  @@index([customerId])
 
   @@map("orders")
+}
+
+model RecurringOrder {
+  id                   String        @id @default(cuid())
+  /// JS weekday: 0 Sunday … 6 Saturday (Asia/Kuching).
+  weekday              Int
+  vendorId             String
+  companyId            String
+  customerId           String?
+  employeeName         String
+  employeeEmail        String?
+  employeePhone        String?
+  department           String?
+  deliveryLocation     String
+  deliveryTime         String?
+  specialInstructions  String?
+  paymentMethod        PaymentMethod @default(COMPANY_ACCOUNT)
+  /// [{ menuItemId, quantity, notes }]
+  items                Json
+  active               Boolean       @default(true)
+  lastCreatedDate      DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  vendor   Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  company  Company   @relation(fields: [companyId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([weekday, active])
+  @@index([customerId])
+  @@map("recurring_orders")
 }
 
 model OrderItem {
