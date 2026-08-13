@@ -1,11 +1,7 @@
-import tls from 'node:tls';
-
-type TlsWithSystemCa = typeof tls & {
+type TlsWithSystemCa = {
   setDefaultCACertificates?: (certs: readonly string[]) => void;
   getCACertificates?: (type?: string) => string[];
 };
-
-const nodeTls = tls as TlsWithSystemCa;
 
 let applied = false;
 
@@ -13,19 +9,26 @@ let applied = false;
  * Trust OS-installed CAs in addition to Node's bundled store.
  * Needed on Windows when a local root CA (corporate proxy / antivirus)
  * intercepts TLS to Neon and Node would otherwise reject the chain.
+ *
+ * Loaded via process.getBuiltinModule so this file can never pull `node:tls`
+ * into the browser bundle.
  */
 export function trustSystemCa() {
   if (applied) return;
-  // Vercel/Linux already have a working CA store. Replacing it here has
-  // broken TLS to Neon in serverless workers.
-  if (process.platform !== 'win32') return;
-  if (typeof nodeTls.setDefaultCACertificates !== 'function') return;
-  if (typeof nodeTls.getCACertificates !== 'function') return;
+  if (typeof process === 'undefined' || process.platform !== 'win32') return;
+
+  const getBuiltin = (
+    process as NodeJS.Process & {
+      getBuiltinModule?: (name: string) => TlsWithSystemCa | undefined;
+    }
+  ).getBuiltinModule;
+  const tls = getBuiltin?.('tls');
+  if (!tls?.setDefaultCACertificates || !tls.getCACertificates) return;
 
   try {
-    nodeTls.setDefaultCACertificates([
-      ...nodeTls.getCACertificates('default'),
-      ...nodeTls.getCACertificates('system'),
+    tls.setDefaultCACertificates([
+      ...tls.getCACertificates('default'),
+      ...tls.getCACertificates('system'),
     ]);
     applied = true;
   } catch {

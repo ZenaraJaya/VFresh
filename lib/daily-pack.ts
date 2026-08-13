@@ -2,8 +2,6 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { sellableQty } from '@/lib/daily-pack-qty';
 
-export { parsePackQty, sellableQty, maxCartQty } from '@/lib/daily-pack-qty';
-
 const OPEN_ORDER = {
   status: { not: 'CANCELLED' as const },
   stockDeducted: false,

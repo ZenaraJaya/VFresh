@@ -2,6 +2,9 @@ import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
+import { authSecret, ensureAuthUrl } from '@/lib/auth-env';
+
+ensureAuthUrl();
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -100,5 +103,5 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: authSecret(),
 };

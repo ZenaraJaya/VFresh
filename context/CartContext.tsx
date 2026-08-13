@@ -9,6 +9,7 @@ import {
 } from 'react';
 import type { CartLine, MenuItem } from '@/types';
 import { calculateTotals } from '@/lib/pricing';
+// Client-safe helpers only. Do not import `@/lib/daily-pack` (it pulls Prisma).
 import { maxCartQty } from '@/lib/daily-pack-qty';
 import toast from 'react-hot-toast';
 
