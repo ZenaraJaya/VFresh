@@ -10,6 +10,7 @@ import { prisma } from '@/lib/db';
 import {
   isMenuFromOpenVendor,
   sortVendorsOpenFirst,
+  VENDOR_HOURS_SELECT,
   VENDOR_PUBLIC_SELECT,
 } from '@/lib/vendor-availability';
 import type { MenuItem, VendorPublic } from '@/types';
