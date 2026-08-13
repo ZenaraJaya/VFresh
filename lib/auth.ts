@@ -103,5 +103,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: authSecret(),
+  get secret() {
+    return authSecret();
+  },
 };
