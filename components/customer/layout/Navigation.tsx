@@ -7,10 +7,8 @@ export const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/menu', label: 'Menu' },
   { href: '/vendors', label: 'Vendors' },
-  { href: '/cart', label: 'Cart' },
   { href: '/#about', label: 'About' },
   { href: '/#location', label: 'Locations' },
-  { href: '/login', label: 'Login' },
 ];
 
 interface NavigationProps {

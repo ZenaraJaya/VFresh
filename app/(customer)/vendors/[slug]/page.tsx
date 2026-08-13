@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import SiteShell from '@/components/customer/layout/SiteShell';
 import MenuCard from '@/components/customer/menu/MenuCard';
 import { prisma } from '@/lib/db';
 import {
@@ -47,8 +46,7 @@ export default async function VendorStorePage({
   }));
 
   return (
-    <SiteShell>
-      <div className="mx-auto max-w-6xl space-y-8 px-4 py-12">
+    <div className="mx-auto max-w-6xl space-y-8 px-4 py-12">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
@@ -89,6 +87,5 @@ export default async function VendorStorePage({
           </div>
         )}
       </div>
-    </SiteShell>
   );
 }

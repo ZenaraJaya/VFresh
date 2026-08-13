@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import SiteShell from '@/components/customer/layout/SiteShell';
 import MenuCard from '@/components/customer/menu/MenuCard';
 import { prisma } from '@/lib/db';
 import {
@@ -79,8 +78,7 @@ export default async function SearchPage({
   const vendorsSorted = sortVendorsOpenFirst(vendors);
 
   return (
-    <SiteShell>
-      <div className="mx-auto max-w-6xl space-y-10 px-4 py-12">
+    <div className="mx-auto max-w-6xl space-y-10 px-4 py-12">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Search</h1>
           <p className="mt-1 text-neutral-500">
@@ -136,6 +134,5 @@ export default async function SearchPage({
           </>
         )}
       </div>
-    </SiteShell>
   );
 }
