@@ -5,6 +5,7 @@ import { slugify } from '@/lib/slug';
 import { generateTempPassword } from '@/lib/password';
 import { normalizeMyPhone } from '@/lib/phone';
 import { emailAlreadyUsed } from '@/lib/email-taken';
+import type { PremisesType } from '@prisma/client';
 
 const PREMISES: PremisesType[] = ['HOMEBASED', 'OTHER'];
 
