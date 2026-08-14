@@ -2,9 +2,20 @@
 
 import { useEffect, useState } from 'react';
 
+import { deliveryTrackPayload } from '@/lib/delivery-sla';
+
 export type OrderLiveSnap = {
   status: string;
   stockDeducted: boolean;
+  pickedUpAt?: string | null;
+  deliveredAt?: string | null;
+  delayReason?: string | null;
+  delayProof?: string | null;
+  courierName?: string | null;
+  deliveryDate?: string;
+  deliveryTime?: string | null;
+  dueAt?: string | null;
+  late?: boolean;
 };
 
 type Entry = {
@@ -27,7 +38,27 @@ async function pull(orderNumber: string) {
   const snap: OrderLiveSnap = {
     status: typeof data.status === 'string' ? data.status : entry.data.status,
     stockDeducted: Boolean(data.stockDeducted),
+    pickedUpAt: data.pickedUpAt ?? data.track?.pickedUpAt ?? null,
+    deliveredAt: data.deliveredAt ?? data.track?.deliveredAt ?? null,
+    delayReason: data.delayReason ?? data.track?.delayReason ?? null,
+    delayProof: data.delayProof ?? data.track?.delayProof ?? null,
+    courierName: data.courierName ?? null,
+    deliveryDate: data.deliveryDate,
+    deliveryTime: data.deliveryTime ?? null,
+    dueAt: data.track?.dueAt ?? null,
+    late: Boolean(data.track?.late),
   };
+  if (!snap.dueAt && snap.deliveryDate) {
+    const track = deliveryTrackPayload({
+      status: snap.status,
+      deliveryDate: snap.deliveryDate,
+      deliveryTime: snap.deliveryTime,
+      pickedUpAt: snap.pickedUpAt,
+      deliveredAt: snap.deliveredAt,
+    });
+    snap.dueAt = track.dueAt;
+    snap.late = track.late;
+  }
   entry.data = snap;
   for (const listener of entry.listeners) listener(snap);
 }

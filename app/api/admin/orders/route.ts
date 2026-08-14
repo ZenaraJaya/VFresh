@@ -2,16 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { VENDOR_ORDER_STATUSES } from '@/lib/order-status';
 import type { Prisma } from '@prisma/client';
 
-const STATUSES = [
-  'PENDING',
-  'CONFIRMED',
-  'PREPARING',
-  'READY',
-  'DELIVERED',
-  'CANCELLED'
-] as const;
+const STATUSES = VENDOR_ORDER_STATUSES;
 
 // GET - Order list for the admin table, filterable by status and company.
 export async function GET(req: NextRequest) {

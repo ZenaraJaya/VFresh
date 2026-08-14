@@ -12,12 +12,12 @@ import OrderCardList from '@/components/customer/account/OrderCardList';
 export const dynamic = 'force-dynamic';
 
 export default async function AccountOrdersPage() {
-  const { session, email } = await loadCustomerAccount('/account/orders');
+  const { session, email, companyId } = await loadCustomerAccount('/account/orders');
 
   const orders = await prisma.order.findMany({
     where: {
       AND: [
-        customerOrderWhere(session.user.id, email),
+        customerOrderWhere(session.user.id, email, companyId),
         { status: { in: ACTIVE_ORDER_STATUSES } },
       ],
     },
@@ -30,7 +30,7 @@ export default async function AccountOrdersPage() {
     <>
       <PageIntro
         title="Orders"
-        description="Open orders you placed. Teammates have their own lists."
+        description="Open orders for your company. Staff covering leave can manage these too."
       />
       <OrdersSubnav />
       <OrderCardList orders={orders} />

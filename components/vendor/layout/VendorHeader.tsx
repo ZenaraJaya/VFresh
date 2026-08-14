@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  Bike,
   ClipboardList,
   ExternalLink,
   LayoutDashboard,
@@ -14,6 +15,7 @@ import {
 const links = [
   { href: '/vendor', label: 'Home', exact: true, icon: LayoutDashboard },
   { href: '/vendor/orders', label: 'Orders', icon: ClipboardList },
+  { href: '/vendor/delivery', label: 'Delivery', icon: Bike },
   { href: '/vendor/menu', label: 'Dishes', icon: UtensilsCrossed },
   { href: '/vendor/store', label: 'Store', icon: Store },
   { href: '/vendor/profile', label: 'Profile', icon: UserRound },
@@ -54,7 +56,7 @@ export default function VendorHeader({
         </Link>
       </div>
 
-      <nav className="grid grid-cols-5 gap-1 border-t border-neutral-100 px-2 py-2 lg:hidden dark:border-neutral-800">
+      <nav className="grid grid-cols-6 gap-1 border-t border-neutral-100 px-2 py-2 lg:hidden dark:border-neutral-800">
         {links.map(({ href, label, exact, icon: Icon }) => {
           const active = exact
             ? pathname === href

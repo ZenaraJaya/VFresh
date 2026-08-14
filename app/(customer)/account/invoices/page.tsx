@@ -36,15 +36,15 @@ export default async function AccountInvoicesPage() {
         title="Invoices"
         description={
           me?.company
-            ? `Shared with everyone at ${me.company.name}.`
-            : 'Register with a company to see invoices.'
+            ? `Shared with everyone at ${me.company.name}. Staff covering leave can view and pay these.`
+            : 'Register your company or join with a staff link to see invoices.'
         }
       />
 
       {!companyId ? (
         <EmptyState
           title="No company on this account"
-          body="Join your workplace at register to share the monthly bill."
+          body="Join with a staff link or register the company from the sign-up page."
         />
       ) : invoices.length === 0 ? (
         <EmptyState

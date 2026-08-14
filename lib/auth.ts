@@ -3,10 +3,12 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { authSecret, ensureAuthUrl } from '@/lib/auth-env';
+import { findCourierByEmail, findCourierById } from '@/lib/courier-lookup';
 
 ensureAuthUrl();
 
 export const authOptions: NextAuthOptions = {
+  secret: authSecret(),
   session: {
     strategy: 'jwt',
   },
@@ -51,6 +53,18 @@ export const authOptions: NextAuthOptions = {
           };
         }
 
+        const courier = await findCourierByEmail(email);
+        if (courier) {
+          const ok = await bcrypt.compare(credentials.password, courier.password);
+          if (!ok) return null;
+          return {
+            id: courier.id,
+            email: courier.email,
+            name: courier.name,
+            role: 'DELIVERY',
+          };
+        }
+
         const customer = await prisma.customer.findUnique({ where: { email } });
         if (!customer) return null;
 
@@ -79,15 +93,34 @@ export const authOptions: NextAuthOptions = {
           vendorStatus?: string;
           companyId?: string;
         };
-        token.role = u.role ?? 'CUSTOMER';
+        if (u.role) token.role = u.role;
         token.vendorStatus = u.vendorStatus;
         token.companyId = u.companyId;
       }
 
-      if (trigger === 'update' && session && token.role === 'CUSTOMER') {
+      if (
+        trigger === 'update' &&
+        session &&
+        (token.role === 'CUSTOMER' || token.role === 'DELIVERY')
+      ) {
         const next = session as { name?: string };
         if (typeof next.name === 'string' && next.name.trim()) {
           token.name = next.name.trim();
+        }
+      }
+
+      // Courier ids live in `couriers`. If this session is a rider, keep the
+      // role even when NextAuth only copied name/email onto the JWT.
+      if (token.sub) {
+        try {
+          const courier = await findCourierById(token.sub);
+          if (courier) {
+            token.role = 'DELIVERY';
+            if (courier.name) token.name = courier.name;
+            token.email = courier.email;
+          }
+        } catch {
+          // Keep the JWT if courier lookup fails.
         }
       }
 
@@ -131,8 +164,5 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-  },
-  get secret() {
-    return authSecret();
   },
 };

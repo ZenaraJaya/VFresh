@@ -11,14 +11,14 @@ import OrderCardList from '@/components/customer/account/OrderCardList';
 export const dynamic = 'force-dynamic';
 
 export default async function AccountOrderHistoryPage() {
-  const { session, email } = await loadCustomerAccount(
+  const { session, email, companyId } = await loadCustomerAccount(
     '/account/orders/history'
   );
 
   const orders = await prisma.order.findMany({
     where: {
       AND: [
-        customerOrderWhere(session.user.id, email),
+        customerOrderWhere(session.user.id, email, companyId),
         { status: { in: ['DELIVERED', 'CANCELLED'] } },
       ],
     },
@@ -31,7 +31,7 @@ export default async function AccountOrderHistoryPage() {
     <>
       <PageIntro
         title="Order history"
-        description="Completed and cancelled orders."
+        description="Completed and cancelled company orders."
       />
       <OrdersSubnav />
       <OrderCardList orders={orders} />

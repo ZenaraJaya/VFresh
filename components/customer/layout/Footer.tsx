@@ -38,6 +38,11 @@ export default function Footer() {
                 Track an order
               </Link>
             </li>
+            <li>
+              <Link href="/delivery" className="hover:text-emerald-600">
+                Delivery desk
+              </Link>
+            </li>
           </ul>
         </div>
 

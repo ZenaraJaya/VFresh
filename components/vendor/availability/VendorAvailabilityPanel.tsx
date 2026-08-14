@@ -45,6 +45,7 @@ export default function VendorAvailabilityPanel() {
   const [isOpen, setIsOpen] = useState(true);
   const [followSchedule, setFollowSchedule] = useState(true);
   const [accepting, setAccepting] = useState(true);
+  const [statusLabel, setStatusLabel] = useState('Open now');
   const [statusDetail, setStatusDetail] = useState<string | null>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [mode, setMode] = useState<ModeTab>('EVERYDAY');
@@ -65,12 +66,18 @@ export default function VendorAvailabilityPanel() {
   const [sharedOpen, setSharedOpen] = useState('09:00');
   const [sharedClose, setSharedClose] = useState('18:00');
 
+  const [lunchOn, setLunchOn] = useState(false);
+  const [lunchStart, setLunchStart] = useState('12:00');
+  const [lunchEnd, setLunchEnd] = useState('13:00');
+
   const [saved, setSaved] = useState<{
     scheduleMode: ScheduleMode;
     closesAt: string | null;
     closedUntil: string | null;
     openTime: string | null;
     closeTime: string | null;
+    lunchStart: string | null;
+    lunchEnd: string | null;
     weeklyHours: WeeklyHours | null;
   }>({
     scheduleMode: 'NONE',
@@ -78,6 +85,8 @@ export default function VendorAvailabilityPanel() {
     closedUntil: null,
     openTime: null,
     closeTime: null,
+    lunchStart: null,
+    lunchEnd: null,
     weeklyHours: null,
   });
   const patchGen = useRef(0);
@@ -91,6 +100,8 @@ export default function VendorAvailabilityPanel() {
     closedUntil?: string | null;
     openTime?: string | null;
     closeTime?: string | null;
+    lunchStart?: string | null;
+    lunchEnd?: string | null;
     weeklyHours?: WeeklyHours | null;
   }) => {
     setIsOpen(Boolean(data.isOpen));
@@ -105,6 +116,7 @@ export default function VendorAvailabilityPanel() {
     setAccepting(
       typeof data.accepting === 'boolean' ? data.accepting : state.accepting
     );
+    setStatusLabel(state.label);
     setStatusDetail(state.detail);
 
     const scheduleMode = String(
@@ -117,6 +129,8 @@ export default function VendorAvailabilityPanel() {
       closedUntil: data.closedUntil ?? null,
       openTime: data.openTime ?? null,
       closeTime: data.closeTime ?? null,
+      lunchStart: data.lunchStart ?? null,
+      lunchEnd: data.lunchEnd ?? null,
       weeklyHours: (data.weeklyHours as WeeklyHours | null) ?? null,
     });
 
@@ -129,6 +143,14 @@ export default function VendorAvailabilityPanel() {
 
     if (data.openTime) setEverydayOpen(data.openTime);
     if (data.closeTime) setEverydayClose(data.closeTime);
+
+    if (data.lunchStart && data.lunchEnd) {
+      setLunchOn(true);
+      setLunchStart(data.lunchStart);
+      setLunchEnd(data.lunchEnd);
+    } else {
+      setLunchOn(false);
+    }
 
     if (data.weeklyHours) {
       const next = { ...defaultWeeklyHours(), ...data.weeklyHours };
@@ -207,6 +229,7 @@ export default function VendorAvailabilityPanel() {
     setIsOpen(next);
     setFollowSchedule(false);
     setAccepting(next);
+    setStatusLabel(next ? 'Open now' : 'Closed now');
     setStatusDetail(next ? 'Manual open' : 'Manual close');
     broadcastVendorOpen(next);
 
@@ -221,6 +244,7 @@ export default function VendorAvailabilityPanel() {
 
   const scheduleSummary = formatVendorSchedule(saved);
   const hasSchedule = saved.scheduleMode !== 'NONE';
+  const onLunch = statusLabel === 'Lunch break';
 
   const setDayHours = (key: (typeof DAY_KEYS)[number], value: DayHours) => {
     setWeekly((prev) => {
@@ -246,16 +270,32 @@ export default function VendorAvailabilityPanel() {
     });
   };
 
+  const lunchPayload = () => {
+    if (!lunchOn) return { lunchStart: null, lunchEnd: null };
+    if (!lunchStart || !lunchEnd) {
+      toast.error('Set lunch start and end, or turn lunch off');
+      return null;
+    }
+    if (lunchStart >= lunchEnd) {
+      toast.error('Lunch end must be after lunch start');
+      return null;
+    }
+    return { lunchStart, lunchEnd };
+  };
+
   const saveSchedule = async () => {
     if (mode === 'EVERYDAY') {
       if (!everydayOpen || !everydayClose) {
         toast.error('Set open and close times');
         return;
       }
+      const lunch = lunchPayload();
+      if (!lunch) return;
       const data = await patch({
         scheduleMode: 'EVERYDAY',
         openTime: everydayOpen,
         closeTime: everydayClose,
+        ...lunch,
         isOpen: true,
       });
       if (data) toast.success('Everyday hours saved');
@@ -296,9 +336,13 @@ export default function VendorAvailabilityPanel() {
         )
       : weekly;
 
+    const lunch = lunchPayload();
+    if (!lunch) return;
+
     const data = await patch({
       scheduleMode: 'CUSTOM',
       weeklyHours: hoursToSave,
+      ...lunch,
       isOpen: true,
     });
     if (data) toast.success('Custom hours saved');
@@ -329,7 +373,7 @@ export default function VendorAvailabilityPanel() {
                 : 'bg-amber-50 text-amber-800'
             }`}
           >
-            {accepting ? 'Open now' : 'Closed now'}
+            {statusLabel}
           </span>
           {statusDetail && (
             <p className="mt-1 text-xs text-neutral-500">{statusDetail}</p>
@@ -364,7 +408,7 @@ export default function VendorAvailabilityPanel() {
           type="button"
           onClick={() => void setManualOpen(false)}
           className={`rounded-xl px-4 py-3 text-sm font-semibold transition ${
-            !accepting
+            !accepting && !onLunch
               ? 'bg-amber-500 text-white ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-neutral-900'
               : 'border border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200'
           }`}
@@ -647,6 +691,53 @@ export default function VendorAvailabilityPanel() {
                     )}
                   </div>
                 </details>
+              </div>
+            )}
+
+            {(mode === 'EVERYDAY' || mode === 'CUSTOM') && (
+              <div className="space-y-3 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+                <label className="flex items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-100">
+                  <input
+                    type="checkbox"
+                    checked={lunchOn}
+                    onChange={(e) => {
+                      setLunchOn(e.target.checked);
+                      if (e.target.checked && !lunchStart) setLunchStart('12:00');
+                      if (e.target.checked && !lunchEnd) setLunchEnd('13:00');
+                    }}
+                    className="h-4 w-4 rounded border-neutral-300 text-emerald-600"
+                  />
+                  Lunch break (optional)
+                </label>
+                <p className="text-xs text-neutral-500">
+                  Customers see this and cannot order during lunch.
+                </p>
+                {lunchOn && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-neutral-500">
+                        Lunch from
+                      </label>
+                      <input
+                        type="time"
+                        value={lunchStart}
+                        onChange={(e) => setLunchStart(e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-neutral-500">
+                        Lunch until
+                      </label>
+                      <input
+                        type="time"
+                        value={lunchEnd}
+                        onChange={(e) => setLunchEnd(e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

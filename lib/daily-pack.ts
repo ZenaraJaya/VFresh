@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { sellableQty } from '@/lib/daily-pack-qty';
+import { requireDelayIfLate, type DeliveryClockOrder } from '@/lib/delivery-sla';
 
 const OPEN_ORDER = {
   status: { not: 'CANCELLED' as const },
@@ -96,8 +97,24 @@ async function restoreLines(tx: Tx, items: { menuItemId: string; quantity: numbe
   }
 }
 
+type DelayExtras = {
+  delayReason?: unknown;
+  delayProof?: unknown;
+};
+
+function delayFields(order: DeliveryClockOrder, extras: DelayExtras, now: Date) {
+  const checked = requireDelayIfLate(order, extras, now);
+  if ('error' in checked) throw new Error(checked.error);
+  return {
+    deliveredAt: now,
+    ...(checked.delayReason
+      ? { delayReason: checked.delayReason, delayProof: checked.delayProof }
+      : {}),
+  };
+}
+
 /** Delivery person Complete: leftover packs go down, order marked delivered. */
-export async function markOrderReceived(orderId: string) {
+export async function markOrderReceived(orderId: string, extras: DelayExtras = {}) {
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { id: orderId },
@@ -110,11 +127,14 @@ export async function markOrderReceived(orderId: string) {
       throw new Error('This order was cancelled');
     }
 
+    const now = new Date();
+    const lateData = delayFields(order, extras, now);
+
     if (order.stockDeducted) {
       if (order.status !== 'DELIVERED') {
         return tx.order.update({
           where: { id: orderId },
-          data: { status: 'DELIVERED' },
+          data: { status: 'DELIVERED', riderAckAt: now, ...lateData },
           include: {
             company: { select: { id: true, name: true } },
             items: { include: { menuItem: true } },
@@ -127,7 +147,7 @@ export async function markOrderReceived(orderId: string) {
     await deductLines(tx, order.items);
     return tx.order.update({
       where: { id: orderId },
-      data: { status: 'DELIVERED', stockDeducted: true },
+      data: { status: 'DELIVERED', stockDeducted: true, riderAckAt: now, ...lateData },
       include: {
         company: { select: { id: true, name: true } },
         items: { include: { menuItem: true } },
@@ -138,10 +158,19 @@ export async function markOrderReceived(orderId: string) {
 
 export async function applyOrderStatusStock(
   orderId: string,
-  nextStatus: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED'
+  nextStatus:
+    | 'PENDING'
+    | 'CONFIRMED'
+    | 'PREPARING'
+    | 'READY'
+    | 'HEADING_TO_VENDOR'
+    | 'OUT_FOR_DELIVERY'
+    | 'DELIVERED'
+    | 'CANCELLED',
+  extras: DelayExtras = {}
 ) {
   if (nextStatus === 'DELIVERED') {
-    return markOrderReceived(orderId);
+    return markOrderReceived(orderId, extras);
   }
 
   return prisma.$transaction(async (tx) => {
@@ -165,7 +194,13 @@ export async function applyOrderStatusStock(
 
     return tx.order.update({
       where: { id: orderId },
-      data: { status: nextStatus },
+      data: {
+        status: nextStatus,
+        ...(nextStatus === 'OUT_FOR_DELIVERY' && !order.pickedUpAt
+          ? { pickedUpAt: new Date() }
+          : {}),
+        ...(nextStatus === 'OUT_FOR_DELIVERY' ? { riderAckAt: new Date() } : {}),
+      },
       include: {
         company: { select: { id: true, name: true } },
         items: { include: { menuItem: true } },

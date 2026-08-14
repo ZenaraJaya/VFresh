@@ -5,17 +5,19 @@ import { useOrderLive } from '@/lib/use-order-live';
 
 const STEPS = [
   { key: 'PENDING', label: 'Receive' },
-  { key: 'CONFIRMED', label: 'Confirmed' },
   { key: 'PREPARING', label: 'Preparing' },
-  { key: 'READY', label: 'On the way' },
+  { key: 'READY', label: 'Ready' },
+  { key: 'OUT_FOR_DELIVERY', label: 'On the way' },
   { key: 'DELIVERED', label: 'Complete' },
 ] as const;
 
 const RANK: Record<string, number> = {
   PENDING: 0,
-  CONFIRMED: 1,
-  PREPARING: 2,
-  READY: 3,
+  CONFIRMED: 0,
+  PREPARING: 1,
+  READY: 2,
+  HEADING_TO_VENDOR: 3,
+  OUT_FOR_DELIVERY: 3,
   DELIVERED: 4,
   CANCELLED: -1,
 };

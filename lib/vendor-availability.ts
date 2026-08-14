@@ -12,6 +12,8 @@ export type VendorHours = {
   closedUntil?: Date | string | null;
   openTime?: string | null;
   closeTime?: string | null;
+  lunchStart?: string | null;
+  lunchEnd?: string | null;
   weeklyHours?: WeeklyHours | unknown | null;
   status?: string;
 };
@@ -27,6 +29,8 @@ export const VENDOR_HOURS_SELECT = {
   closedUntil: true,
   openTime: true,
   closeTime: true,
+  lunchStart: true,
+  lunchEnd: true,
   weeklyHours: true,
 } as const;
 
@@ -65,6 +69,57 @@ export function formatHmLabel(hm: string) {
   const d = new Date();
   d.setHours(h, m, 0, 0);
   return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+export function lunchWindow(vendor: {
+  lunchStart?: string | null;
+  lunchEnd?: string | null;
+}): { start: string; end: string } | null {
+  const start = vendor.lunchStart?.trim() || '';
+  const end = vendor.lunchEnd?.trim() || '';
+  if (!start || !end) return null;
+  const s = parseHm(start);
+  const e = parseHm(end);
+  if (s == null || e == null || s === e) return null;
+  return { start, end };
+}
+
+export function isVendorOnLunchBreak(vendor: VendorHours, now = new Date()) {
+  if (vendor.followSchedule === false) return false;
+  const lunch = lunchWindow(vendor);
+  if (!lunch) return false;
+  return isWithinDailyWindow(now, lunch.start, lunch.end);
+}
+
+export function formatLunchLabel(vendor: {
+  lunchStart?: string | null;
+  lunchEnd?: string | null;
+}) {
+  const lunch = lunchWindow(vendor);
+  if (!lunch) return null;
+  return `Lunch ${formatHmLabel(lunch.start)}–${formatHmLabel(lunch.end)}`;
+}
+
+export function vendorOpenBadge(vendor: VendorHours): 'Open' | 'Lunch' | 'Closed' {
+  if (isVendorAcceptingOrders({ ...vendor, status: 'APPROVED' })) return 'Open';
+  if (isVendorOnLunchBreak(vendor)) return 'Lunch';
+  return 'Closed';
+}
+
+export function vendorPauseMessage(vendor: VendorHours) {
+  if (isVendorOnLunchBreak(vendor)) {
+    const lunch = formatLunchLabel(vendor);
+    return lunch
+      ? `${lunch} — not taking orders right now`
+      : 'This vendor is on lunch break';
+  }
+  return 'This vendor is temporarily closed';
+}
+
+function withLunchPause(vendor: VendorHours, otherwiseOpen: boolean, now: Date) {
+  if (!otherwiseOpen) return false;
+  if (isVendorOnLunchBreak(vendor, now)) return false;
+  return true;
 }
 
 export function isWithinDailyWindow(
@@ -159,7 +214,11 @@ export function isVendorAcceptingOrders(vendor: VendorHours) {
 
   if (mode === 'EVERYDAY') {
     if (!vendor.openTime || !vendor.closeTime) return Boolean(vendor.isOpen);
-    return isWithinDailyWindow(now, vendor.openTime, vendor.closeTime);
+    return withLunchPause(
+      vendor,
+      isWithinDailyWindow(now, vendor.openTime, vendor.closeTime),
+      now
+    );
   }
 
   if (mode === 'CUSTOM') {
@@ -169,7 +228,11 @@ export function isVendorAcceptingOrders(vendor: VendorHours) {
     const day = weekly[key];
     if (day === undefined) return Boolean(vendor.isOpen);
     if (day === null) return false;
-    return isWithinDailyWindow(now, day.open, day.close);
+    return withLunchPause(
+      vendor,
+      isWithinDailyWindow(now, day.open, day.close),
+      now
+    );
   }
 
   return Boolean(vendor.isOpen);
@@ -184,10 +247,19 @@ export function vendorOpenStateLabel(vendor: VendorHours): {
   const accepting = isVendorAcceptingOrders({ ...vendor, status: 'APPROVED' });
   const follow = vendor.followSchedule !== false;
   const mode = resolveMode(vendor);
+  const lunch = formatLunchLabel(vendor);
 
   if (accepting) {
     if (!follow) return { accepting: true, label: 'Open now', detail: 'Manual open' };
-    return { accepting: true, label: 'Open now', detail: null };
+    return { accepting: true, label: 'Open now', detail: lunch };
+  }
+
+  if (follow && isVendorOnLunchBreak(vendor)) {
+    return {
+      accepting: false,
+      label: 'Lunch break',
+      detail: lunch,
+    };
   }
 
   if (!follow && !vendor.isOpen) {
@@ -239,6 +311,16 @@ export function vendorOpenStateLabel(vendor: VendorHours): {
 export function vendorClosedLabel(vendor: VendorHours) {
   if (isVendorAcceptingOrders({ ...vendor, status: 'APPROVED' })) {
     return null;
+  }
+
+  if (
+    vendor.followSchedule !== false &&
+    isVendorOnLunchBreak(vendor)
+  ) {
+    const lunch = formatLunchLabel(vendor);
+    return lunch
+      ? `${lunch} · not taking orders`
+      : 'Lunch break · not taking orders';
   }
 
   const mode = resolveMode(vendor);
@@ -317,12 +399,18 @@ export function formatVendorSchedule(vendor: {
   closedUntil?: Date | string | null;
   openTime?: string | null;
   closeTime?: string | null;
+  lunchStart?: string | null;
+  lunchEnd?: string | null;
   weeklyHours?: WeeklyHours | unknown | null;
 }) {
   const mode = resolveMode({ isOpen: true, ...vendor });
+  const lunch = formatLunchLabel(vendor);
+  const withLunch = (hours: string) => (lunch ? `${hours} · ${lunch}` : hours);
 
   if (mode === 'EVERYDAY' && vendor.openTime && vendor.closeTime) {
-    return `Daily ${formatHmLabel(vendor.openTime)}–${formatHmLabel(vendor.closeTime)}`;
+    return withLunch(
+      `Daily ${formatHmLabel(vendor.openTime)}–${formatHmLabel(vendor.closeTime)}`
+    );
   }
 
   if (mode === 'CUSTOM') {
@@ -345,16 +433,18 @@ export function formatVendorSchedule(vendor: {
     if (sameHours) {
       const days = formatDayGroups(openEntries.map((e) => e.i));
       const hours = `${formatHmLabel(openEntries[0].open)}–${formatHmLabel(openEntries[0].close)}`;
-      return `${days} · ${hours}`;
+      return withLunch(`${days} · ${hours}`);
     }
 
     // Different hours: only list open days
-    return openEntries
-      .map(
-        (e) =>
-          `${DAY_LABELS[e.i]} ${formatHmLabel(e.open)}–${formatHmLabel(e.close)}`
-      )
-      .join(' · ');
+    return withLunch(
+      openEntries
+        .map(
+          (e) =>
+            `${DAY_LABELS[e.i]} ${formatHmLabel(e.open)}–${formatHmLabel(e.close)}`
+        )
+        .join(' · ')
+    );
   }
 
   if (mode === 'RANGE') {

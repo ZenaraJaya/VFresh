@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { normalizeMyPhone } from '@/lib/phone';
 import type { PremisesType } from '@prisma/client';
 import { normalizeVendorLogo } from '@/lib/vendor-logo';
 
@@ -63,7 +64,13 @@ export async function PATCH(req: Request) {
           ? String(body.description).trim()
           : undefined,
       phone:
-        body.phone !== undefined ? String(body.phone).trim() : undefined,
+        body.phone !== undefined
+          ? normalizeMyPhone(String(body.phone)) ?? ''
+          : undefined,
+      deliveryPhone:
+        body.deliveryPhone !== undefined
+          ? normalizeMyPhone(String(body.deliveryPhone)) ?? null
+          : undefined,
       address:
         body.address !== undefined
           ? String(body.address).trim()

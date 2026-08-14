@@ -47,6 +47,8 @@ model Vendor {
   slug               String       @unique
   description        String?
   phone              String?
+  /// Rider / runner contact for late or no-response pings.
+  deliveryPhone      String?
   address            String?
   registrationNumber String?
   premisesType       PremisesType @default(OTHER)
@@ -65,6 +67,9 @@ model Vendor {
   openTime           String?
   /// EVERYDAY mode: "HH:mm"
   closeTime          String?
+  /// Optional pause during open hours, "HH:mm"
+  lunchStart         String?
+  lunchEnd           String?
   /// CUSTOM mode: { "0"|"1"|...|"6": { open, close } | null } (0=Sun)
   weeklyHours        Json?
   createdAt          DateTime     @default(now())
@@ -77,13 +82,35 @@ model Vendor {
   @@map("vendors")
 }
 
+model Courier {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+
+  @@map("couriers")
+}
+
+enum CompanyRole {
+  OWNER
+  STAFF
+}
+
 model Customer {
   id            String         @id @default(cuid())
   email         String         @unique
   password      String
   name          String?
   phone         String?
+  /// HR, manager, admin, etc.
+  jobTitle      String?
   companyId     String?
+  companyRole   CompanyRole    @default(STAFF)
   paymentMethod PaymentMethod  @default(CREDIT_CARD)
   billingName     String?
   billingEmail    String?
@@ -101,29 +128,61 @@ model Customer {
   updatedAt     DateTime       @updatedAt
 
   company         Company?         @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  registeredCompanies Company[]    @relation("CompanyRegistrant")
   orders          Order[]
   recurringOrders RecurringOrder[]
+  invitesCreated  CompanyInvite[]
 
   @@index([companyId])
   @@map("customers")
 }
 
+enum CompanyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model Company {
-  id             String   @id @default(cuid())
-  name           String   @unique
+  id             String        @id @default(cuid())
+  name           String        @unique
   billingEmail   String
   billingAddress String?
   phone          String?
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  isActive       Boolean       @default(true)
+  status         CompanyStatus @default(APPROVED)
+  registeredById String?
+  reviewedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
-  orders   Order[]
-  invoices Invoice[]
+  registeredBy    Customer?        @relation("CompanyRegistrant", fields: [registeredById], references: [id], onDelete: SetNull)
+  orders          Order[]
+  invoices        Invoice[]
   recurringOrders RecurringOrder[]
-  customers Customer[]
+  customers       Customer[]
+  invites         CompanyInvite[]
 
+  @@index([registeredById])
   @@map("companies")
+}
+
+/// Shareable link so staff can join and cover orders/payments.
+model CompanyInvite {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  companyId   String
+  createdById String
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy Customer @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("company_invites")
 }
 
 model MenuItem {
@@ -173,6 +232,19 @@ model Order {
   paidAt              DateTime?
   /// True after leftover packs were deducted (customer/vendor Receive).
   stockDeducted       Boolean       @default(false)
+  /// Rider marked On the way / picked up.
+  pickedUpAt          DateTime?
+  deliveredAt         DateTime?
+  delayReason         String?
+  /// Photo proof (data URL or https) if delivery took more than 1 hour.
+  delayProof          String?
+  /// Kitchen pinged the rider; riderAckAt is set when they reply on the desk.
+  riderNotifiedAt     DateTime?
+  riderNotifyNote     String?
+  riderAckAt          DateTime?
+  courierId           String?
+  /// Snapshot of the signed-in rider’s name for vendor and customer.
+  courierName         String?
   invoiceId           String?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
@@ -180,10 +252,12 @@ model Order {
   company  Company     @relation(fields: [companyId], references: [id])
   vendor   Vendor?     @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   customer Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  courier  Courier?    @relation(fields: [courierId], references: [id], onDelete: SetNull)
   items    OrderItem[]
   invoice  Invoice?    @relation(fields: [invoiceId], references: [id])
 
   @@index([customerId])
+  @@index([courierId])
 
   @@map("orders")
 }
@@ -257,6 +331,8 @@ enum OrderStatus {
   CONFIRMED
   PREPARING
   READY
+  HEADING_TO_VENDOR
+  OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
 }

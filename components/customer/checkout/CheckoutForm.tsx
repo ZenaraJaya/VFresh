@@ -13,6 +13,7 @@ import { useCart } from '@/context/CartContext';
 import { groupCartByVendor } from '@/lib/group-cart';
 import type { PaymentMethod } from '@/types';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
+import PhoneInput from '@/components/shared/ui/PhoneInput';
 import { weekdayName } from '@/lib/miri-date';
 
 const schema = z.object({
@@ -261,10 +262,10 @@ export default function CheckoutForm() {
             >
               Phone <span className="text-neutral-400">(optional)</span>
             </label>
-            <input
+            <PhoneInput
               id="employeePhone"
-              {...register('employeePhone')}
-              className={inputClass}
+              value={watch('employeePhone') ?? ''}
+              onChange={(value) => setValue('employeePhone', value)}
             />
           </div>
         </div>
@@ -330,6 +331,10 @@ export default function CheckoutForm() {
               <option value="12:00 - 12:30">12:00 – 12:30</option>
               <option value="12:30 - 13:00">12:30 – 13:00</option>
             </select>
+            <p className="mt-1 text-xs text-neutral-500">
+              After the rider picks up, they have 1 hour to arrive. If later,
+              they must explain with a photo.
+            </p>
           </div>
         </div>
 

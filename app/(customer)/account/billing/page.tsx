@@ -33,7 +33,7 @@ export default async function AccountBillingPage() {
     prisma.order.findMany({
       where: {
         AND: [
-          customerOrderWhere(session.user.id, email),
+          customerOrderWhere(session.user.id, email, companyId),
           { paymentStatus: 'PAID' },
         ],
       },
@@ -65,13 +65,13 @@ export default async function AccountBillingPage() {
     <>
       <PageIntro
         title="Billing"
-        description="You pay for orders. Save the billing address and card we should charge."
+        description="Pay for company orders. Staff covering leave can use these details too."
       />
 
       <div className="space-y-6">
         <SectionCard
           title="Payment details"
-          description="Used on checkout and receipts. Teammates at the same company share invoices, not this card."
+          description="Used on checkout and receipts. Anyone on the staff link can pay while you are away."
         >
           <BillingForm
             initial={{

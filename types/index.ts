@@ -3,6 +3,8 @@ export type OrderStatus =
   | 'CONFIRMED'
   | 'PREPARING'
   | 'READY'
+  | 'HEADING_TO_VENDOR'
+  | 'OUT_FOR_DELIVERY'
   | 'DELIVERED'
   | 'CANCELLED';
 
@@ -35,6 +37,8 @@ export interface MenuItem {
     closedUntil?: string | Date | null;
     openTime?: string | null;
     closeTime?: string | null;
+    lunchStart?: string | null;
+    lunchEnd?: string | null;
     weeklyHours?: unknown;
   } | null;
   createdAt?: string | Date;
@@ -56,6 +60,8 @@ export interface VendorPublic {
   closedUntil?: string | Date | null;
   openTime?: string | null;
   closeTime?: string | null;
+  lunchStart?: string | null;
+  lunchEnd?: string | null;
   weeklyHours?: unknown;
   _count?: { menuItems: number };
 }
@@ -67,6 +73,15 @@ export interface Company {
   billingAddress?: string | null;
   phone?: string | null;
   isActive: boolean;
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  registeredBy?: {
+    id: string;
+    name?: string | null;
+    email: string;
+    jobTitle?: string | null;
+  } | null;
+  reviewedAt?: string | Date | null;
+  reviewNote?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -108,6 +123,11 @@ export interface Order {
   company?: Company;
   vendor?: { id: string; businessName: string; slug?: string } | null;
   stockDeducted?: boolean;
+  pickedUpAt?: string | Date | null;
+  deliveredAt?: string | Date | null;
+  delayReason?: string | null;
+  delayProof?: string | null;
+  courierName?: string | null;
   items?: OrderItem[];
 }
 
@@ -158,6 +178,7 @@ export interface DashboardStats {
   totalRevenue: number;
   pendingOrders: number;
   activeCompanies: number;
+  pendingCompanies: number;
   menuItemCount: number;
   recentOrders: Order[];
   revenueByDay: { date: string; revenue: number }[];

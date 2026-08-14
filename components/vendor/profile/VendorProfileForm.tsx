@@ -5,11 +5,13 @@ import { Loader2, Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { readImageFileAsJpeg } from '@/lib/read-image-file';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
+import PhoneInput from '@/components/shared/ui/PhoneInput';
 
 type Profile = {
   businessName: string;
   description: string;
   phone: string;
+  deliveryPhone: string;
   address: string;
   logo: string;
   registrationNumber: string | null;
@@ -31,6 +33,7 @@ export default function VendorStoreForm() {
           businessName: data.businessName,
           description: data.description ?? '',
           phone: data.phone ?? '',
+          deliveryPhone: data.deliveryPhone ?? '',
           address: data.address ?? '',
           logo: data.logo ?? '',
           registrationNumber: data.registrationNumber ?? null,
@@ -144,7 +147,6 @@ export default function VendorStoreForm() {
         {(
           [
             ['businessName', 'Business name'],
-            ['phone', 'Phone'],
             ['address', 'Address / location'],
           ] as const
         ).map(([key, label]) => (
@@ -163,6 +165,38 @@ export default function VendorStoreForm() {
             />
           </div>
         ))}
+
+        <div className="space-y-1">
+          <label className="text-sm font-medium" htmlFor="vendor-phone">
+            Phone
+            <RequiredMark />
+          </label>
+          <PhoneInput
+            id="vendor-phone"
+            required
+            value={form.phone}
+            onChange={(phone) =>
+              setForm((f) => (f ? { ...f, phone } : f))
+            }
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-sm font-medium" htmlFor="vendor-delivery-phone">
+            Delivery rider phone
+          </label>
+          <PhoneInput
+            id="vendor-delivery-phone"
+            value={form.deliveryPhone}
+            onChange={(deliveryPhone) =>
+              setForm((f) => (f ? { ...f, deliveryPhone } : f))
+            }
+          />
+          <p className="text-xs text-neutral-500">
+            Optional. Used when you tap Notify on a quiet run — opens WhatsApp
+            or SMS with the order number.
+          </p>
+        </div>
 
         <div className="space-y-1">
           <label className="text-sm font-medium">

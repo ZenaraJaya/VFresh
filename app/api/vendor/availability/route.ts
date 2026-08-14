@@ -49,6 +49,28 @@ function parseTime(value: unknown, label: string) {
   return { value: raw };
 }
 
+function parseLunchPair(start: unknown, end: unknown) {
+  const s =
+    start === null || start === undefined || start === ''
+      ? ''
+      : String(start).trim();
+  const e =
+    end === null || end === undefined || end === ''
+      ? ''
+      : String(end).trim();
+  if (!s && !e) return { start: null as string | null, end: null as string | null };
+  if (!s || !e) {
+    return { error: 'Set both lunch start and end, or leave lunch empty.' };
+  }
+  if (parseHm(s) == null || parseHm(e) == null) {
+    return { error: 'Invalid lunch time. Use HH:mm.' };
+  }
+  if ((parseHm(s) as number) >= (parseHm(e) as number)) {
+    return { error: 'Lunch end must be after lunch start.' };
+  }
+  return { start: s, end: e };
+}
+
 function parseWeekly(value: unknown) {
   const weekly = asWeeklyHours(value);
   if (!weekly) {
@@ -112,6 +134,8 @@ export async function PATCH(req: Request) {
   let closedUntil: Date | null | undefined;
   let openTime: string | null | undefined;
   let closeTime: string | null | undefined;
+  let lunchStart: string | null | undefined;
+  let lunchEnd: string | null | undefined;
   let weeklyHours: WeeklyHours | null | undefined;
 
   let followSchedule: boolean | undefined;
@@ -122,6 +146,8 @@ export async function PATCH(req: Request) {
     closedUntil = null;
     openTime = null;
     closeTime = null;
+    lunchStart = null;
+    lunchEnd = null;
     weeklyHours = null;
     followSchedule = true;
     if (isOpen === undefined) isOpen = true;
@@ -175,6 +201,13 @@ export async function PATCH(req: Request) {
       closedUntil = null;
       weeklyHours = null;
       isOpen = true;
+
+      const lunch = parseLunchPair(body.lunchStart, body.lunchEnd);
+      if ('error' in lunch && lunch.error) {
+        return NextResponse.json({ error: lunch.error }, { status: 400 });
+      }
+      lunchStart = lunch.start ?? null;
+      lunchEnd = lunch.end ?? null;
     } else {
       const weeklyParsed = parseWeekly(body.weeklyHours);
       if (weeklyParsed.error) {
@@ -188,6 +221,13 @@ export async function PATCH(req: Request) {
       openTime = null;
       closeTime = null;
       isOpen = true;
+
+      const lunch = parseLunchPair(body.lunchStart, body.lunchEnd);
+      if ('error' in lunch && lunch.error) {
+        return NextResponse.json({ error: lunch.error }, { status: 400 });
+      }
+      lunchStart = lunch.start ?? null;
+      lunchEnd = lunch.end ?? null;
     }
   } else if (body.isOpen !== undefined) {
     // Manual open/close: schedule kept, but override until Save hours again
@@ -207,6 +247,8 @@ export async function PATCH(req: Request) {
       ...(closedUntil !== undefined ? { closedUntil } : {}),
       ...(openTime !== undefined ? { openTime } : {}),
       ...(closeTime !== undefined ? { closeTime } : {}),
+      ...(lunchStart !== undefined ? { lunchStart } : {}),
+      ...(lunchEnd !== undefined ? { lunchEnd } : {}),
       ...(weeklyHours !== undefined
         ? {
             weeklyHours:

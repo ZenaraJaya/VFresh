@@ -8,9 +8,10 @@ import {
   UserRound,
   Store,
   ClipboardList,
+  Bike,
   ExternalLink,
 } from 'lucide-react';
-import { isVendorAcceptingOrders, type VendorHours } from '@/lib/vendor-availability';
+import { isVendorAcceptingOrders, vendorOpenStateLabel, type VendorHours } from '@/lib/vendor-availability';
 import { useLivePoll } from '@/lib/use-live-poll';
 import { useVendorOpenSync } from '@/lib/vendor-open-sync';
 import { useCallback, useState } from 'react';
@@ -18,6 +19,7 @@ import { useCallback, useState } from 'react';
 const NAV = [
   { href: '/vendor', label: 'Home', icon: LayoutDashboard },
   { href: '/vendor/orders', label: 'Orders', icon: ClipboardList },
+  { href: '/vendor/delivery', label: 'Delivery', icon: Bike },
   { href: '/vendor/menu', label: 'Dishes', icon: UtensilsCrossed },
   { href: '/vendor/store', label: 'Store', icon: Store },
   { href: '/vendor/profile', label: 'Profile', icon: UserRound },
@@ -44,9 +46,17 @@ export default function VendorSidebar({
       status,
     })
   );
+  const [openLabel, setOpenLabel] = useState(
+    () =>
+      vendorOpenStateLabel({
+        ...hours,
+        status,
+      }).label
+  );
 
   const onOpenSync = useCallback((next: boolean) => {
     setAccepting(next);
+    setOpenLabel(next ? 'Open now' : 'Closed now');
   }, []);
   useVendorOpenSync(onOpenSync);
 
@@ -55,6 +65,7 @@ export default function VendorSidebar({
     if (!res.ok) return;
     const data = await res.json();
     if (typeof data.accepting === 'boolean') setAccepting(data.accepting);
+    setOpenLabel(vendorOpenStateLabel({ ...data, status }).label);
   }, 8000);
 
   return (
@@ -82,7 +93,11 @@ export default function VendorSidebar({
                 accepting ? 'text-emerald-600' : 'text-amber-700'
               }`}
             >
-              {accepting ? 'Open' : 'Closed'}
+              {openLabel === 'Lunch break'
+                ? 'Lunch'
+                : accepting
+                  ? 'Open'
+                  : 'Closed'}
             </p>
           </div>
         </div>

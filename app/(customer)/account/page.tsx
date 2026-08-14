@@ -1,7 +1,10 @@
 import { prisma } from '@/lib/db';
 import { loadCustomerAccount } from '@/lib/customer-account';
+import { isCompanyUsable, companyStatusLabel } from '@/lib/company';
 import ProfileForm from '@/components/customer/account/ProfileForm';
 import PasswordForm from '@/components/customer/account/PasswordForm';
+import InviteLinkPanel from '@/components/customer/account/InviteLinkPanel';
+import RegisterCompanyForm from '@/components/customer/account/RegisterCompanyForm';
 import { PageIntro, SectionCard } from '@/components/customer/account/ui';
 
 export const dynamic = 'force-dynamic';
@@ -12,12 +15,21 @@ export default async function AccountProfilePage() {
   const teammates = companyId
     ? await prisma.customer.findMany({
         where: { companyId },
-        select: { id: true, name: true, email: true, createdAt: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          jobTitle: true,
+          companyRole: true,
+          createdAt: true,
+        },
         orderBy: { createdAt: 'asc' },
       })
     : [];
 
   const first = teammates[0];
+  const isOwner = me?.companyRole === 'OWNER';
+  const companyApproved = isCompanyUsable(me?.company);
 
   return (
     <>
@@ -31,7 +43,11 @@ export default async function AccountProfilePage() {
           title="Personal details"
           description="Used on checkout and weekly orders."
         >
-          <ProfileForm name={me?.name ?? ''} phone={me?.phone ?? ''} />
+          <ProfileForm
+            name={me?.name ?? ''}
+            phone={me?.phone ?? ''}
+            jobTitle={me?.jobTitle ?? ''}
+          />
           <p className="mt-4 text-sm text-neutral-500">
             Email{' '}
             <span className="font-medium text-neutral-800 dark:text-neutral-200">
@@ -43,20 +59,34 @@ export default async function AccountProfilePage() {
 
         <SectionCard
           title="Company"
-          description="Staff who register under the same company share invoices."
+          description="Register your workplace from this profile. Staff can cover orders and payments when you are away."
         >
           {!me?.company ? (
-            <p className="text-sm text-neutral-500">
-              No company linked yet.
-            </p>
+            <RegisterCompanyForm defaultJobTitle={me?.jobTitle ?? ''} />
           ) : (
             <>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
                 <span className="font-semibold text-neutral-900 dark:text-white">
                   {me.company.name}
                 </span>
-                . Orders and this card stay on your account.
+                {' · '}
+                {companyStatusLabel(me.company.status)}
+                {' · '}
+                {isOwner ? 'You manage this account' : 'Staff access'}
+                {me.jobTitle ? ` · ${me.jobTitle}` : ''}.
               </p>
+              {me.company.status === 'PENDING' ? (
+                <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                  Waiting for admin review. You can share a staff cover link
+                  after the company is approved.
+                </p>
+              ) : null}
+              {me.company.status === 'REJECTED' ? (
+                <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
+                  This registration was not approved
+                  {me.company.reviewNote ? `: ${me.company.reviewNote}` : '.'}
+                </p>
+              ) : null}
               <ul className="mt-4 divide-y divide-neutral-100 dark:divide-neutral-800">
                 {teammates.map((person) => (
                   <li
@@ -72,13 +102,21 @@ export default async function AccountProfilePage() {
                       ) : null}
                     </span>
                     <span className="text-xs text-neutral-500">
-                      {first?.id === person.id
-                        ? 'First to join'
-                        : person.email}
+                      {person.companyRole === 'OWNER'
+                        ? 'Owner'
+                        : person.jobTitle || person.email}
                     </span>
                   </li>
                 ))}
               </ul>
+              {isOwner && companyApproved ? (
+                <InviteLinkPanel companyName={me.company.name} />
+              ) : isOwner ? null : (
+                <p className="mt-4 text-xs text-neutral-500">
+                  Ask {first?.name || 'your HR or manager'} for a staff link
+                  if a teammate needs cover.
+                </p>
+              )}
             </>
           )}
         </SectionCard>

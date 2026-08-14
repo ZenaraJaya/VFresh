@@ -8,14 +8,9 @@ import { useLivePoll } from '@/lib/use-live-poll';
 import { useVendorOpenSync } from '@/lib/vendor-open-sync';
 import VendorAvailabilityPanel from '@/components/vendor/availability/VendorAvailabilityPanel';
 
-const STATUS_LABEL: Record<string, string> = {
-  PENDING: 'New',
-  CONFIRMED: 'Confirmed',
-  PREPARING: 'Preparing',
-  READY: 'On the way',
-  DELIVERED: 'Complete',
-  CANCELLED: 'Cancelled',
-};
+import { ORDER_STATUS_LABEL } from '@/lib/order-status';
+
+const STATUS_LABEL = ORDER_STATUS_LABEL;
 
 type Recent = {
   id: string;
@@ -30,10 +25,12 @@ type Recent = {
 
 type Live = {
   accepting: boolean;
+  onLunch?: boolean;
   address: string | null;
   menuCount: number;
   availableCount: number;
   newOrders: number;
+  delayedDeliveries?: number;
   recentOrders: Recent[];
 };
 
@@ -64,7 +61,9 @@ export default function VendorDashboardLive() {
   useVendorOpenSync(onOpenSync);
 
   const accepting = live?.accepting ?? false;
+  const onLunch = live?.onLunch ?? false;
   const newOrders = live?.newOrders ?? 0;
+  const delayedDeliveries = live?.delayedDeliveries ?? 0;
   const availableCount = live?.availableCount ?? 0;
   const menuCount = live?.menuCount ?? 0;
   const address = live?.address;
@@ -83,6 +82,26 @@ export default function VendorDashboardLive() {
           <p className="mt-2 text-3xl font-bold">{newOrders}</p>
           <p className="mt-1 text-xs text-neutral-500">Waiting for you</p>
         </Link>
+        <Link
+          href="/vendor/delivery"
+          className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-emerald-300 dark:border-neutral-800 dark:bg-neutral-900"
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
+            Delivery
+          </p>
+          <p
+            className={`mt-2 text-3xl font-bold ${
+              delayedDeliveries > 0 ? 'text-amber-700' : 'text-neutral-900 dark:text-white'
+            }`}
+          >
+            {delayedDeliveries}
+          </p>
+          <p className="mt-1 text-xs text-neutral-500">
+            {delayedDeliveries > 0
+              ? 'Over 1 hour — tap to track'
+              : 'Runs on time'}
+          </p>
+        </Link>
         <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
             Store
@@ -92,10 +111,14 @@ export default function VendorDashboardLive() {
               accepting ? 'text-emerald-600' : 'text-amber-700'
             }`}
           >
-            {accepting ? 'Open' : 'Closed'}
+            {onLunch ? 'Lunch' : accepting ? 'Open' : 'Closed'}
           </p>
           <p className="mt-1 text-xs text-neutral-500">
-            {accepting ? 'Taking orders' : 'Not visible as open'}
+            {onLunch
+              ? 'Not taking orders until lunch ends'
+              : accepting
+                ? 'Taking orders'
+                : 'Not visible as open'}
           </p>
         </div>
         <Link

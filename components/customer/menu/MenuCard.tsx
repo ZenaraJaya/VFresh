@@ -10,6 +10,8 @@ import { formatMYR } from '@/lib/pricing';
 import {
   isVendorAcceptingOrders,
   vendorClosedLabel,
+  vendorOpenBadge,
+  vendorPauseMessage,
 } from '@/lib/vendor-availability';
 import type { MenuItem } from '@/types';
 
@@ -36,11 +38,26 @@ export default function MenuCard({
         isOpen: item.vendor.isOpen ?? true,
       })
     : null;
+  const badge = item.vendor
+    ? vendorOpenBadge({
+        ...item.vendor,
+        isOpen: item.vendor.isOpen ?? true,
+        status: 'APPROVED',
+      })
+    : 'Open';
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!accepting) {
-      toast.error('This vendor is temporarily closed');
+      toast.error(
+        item.vendor
+          ? vendorPauseMessage({
+              ...item.vendor,
+              isOpen: item.vendor.isOpen ?? true,
+              status: 'APPROVED',
+            })
+          : 'This vendor is temporarily closed'
+      );
       return;
     }
     const left = item.remainingQty;
@@ -75,7 +92,7 @@ export default function MenuCard({
         )}
         {!accepting && (
           <span className="absolute left-3 top-3 rounded-full bg-amber-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
-            Closed
+            {badge === 'Lunch' ? 'Lunch' : 'Closed'}
           </span>
         )}
         <button

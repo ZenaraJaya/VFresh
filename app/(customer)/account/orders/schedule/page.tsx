@@ -15,12 +15,12 @@ import {
 export const dynamic = 'force-dynamic';
 
 export default async function AccountSchedulePage() {
-  const { session, email } = await loadCustomerAccount(
+  const { session, email, companyId } = await loadCustomerAccount(
     '/account/orders/schedule'
   );
 
   const schedule = await prisma.recurringOrder.findMany({
-    where: customerScheduleWhere(session.user.id, email),
+    where: customerScheduleWhere(session.user.id, email, companyId),
     include: { vendor: { select: { businessName: true } } },
     orderBy: { weekday: 'asc' },
   });
@@ -29,7 +29,7 @@ export default async function AccountSchedulePage() {
     <>
       <PageIntro
         title="Scheduled orders"
-        description="Weekly repeats until you stop them. Tick “repeat every …” at checkout to start one."
+        description="Weekly repeats for your company until someone on the team stops them."
       />
       <OrdersSubnav />
       {schedule.length === 0 ? (

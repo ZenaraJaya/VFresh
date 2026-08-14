@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { formatMYR } from '@/lib/pricing';
 import OrderDeliveryNote from '@/components/customer/orders/OrderDeliveryNote';
 import OrderProgress from '@/components/customer/orders/OrderProgress';
+import OrderQr from '@/components/delivery/OrderQr';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +41,14 @@ export default async function OrderConfirmationPage({
         <p className="mt-4 inline-block max-w-full break-all rounded-xl bg-neutral-100 px-3 py-2 font-mono text-sm font-semibold sm:px-4 sm:text-lg dark:bg-neutral-800">
           {order.orderNumber}
         </p>
+        {order.courierName && (
+          <p className="mt-3 text-sm font-medium text-emerald-800 dark:text-emerald-300">
+            Rider: {order.courierName}
+          </p>
+        )}
+        <div className="mt-5 flex justify-center">
+          <OrderQr orderNumber={order.orderNumber} />
+        </div>
       </div>
 
       <div className="mb-6">
@@ -158,6 +167,13 @@ export default async function OrderConfirmationPage({
         <OrderDeliveryNote
           orderNumber={order.orderNumber}
           status={order.status}
+          deliveryDate={order.deliveryDate.toISOString()}
+          deliveryTime={order.deliveryTime}
+          pickedUpAt={order.pickedUpAt}
+          deliveredAt={order.deliveredAt}
+          delayReason={order.delayReason}
+          delayProof={order.delayProof}
+          courierName={order.courierName}
         />
         <Link
           href="/menu"

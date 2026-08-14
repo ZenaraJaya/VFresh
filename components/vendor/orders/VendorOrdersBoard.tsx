@@ -8,6 +8,9 @@ import { formatMYR } from '@/lib/pricing';
 import { deliveryDayLabel } from '@/lib/order-priority';
 import { miriYmd, ymdFromValue } from '@/lib/miri-date';
 import type { OrderStatus } from '@/types';
+import { ORDER_STATUS_LABEL, VENDOR_ORDER_STATUSES } from '@/lib/order-status';
+import { DELAY_REASON_MIN, isDeliveryLate } from '@/lib/delivery-sla';
+import { readImageFileAsJpeg } from '@/lib/read-image-file';
 
 type Row = {
   id: string;
@@ -19,18 +22,17 @@ type Row = {
   status: OrderStatus;
   total: number;
   createdAt: string;
+  pickedUpAt?: string | null;
+  deliveredAt?: string | null;
+  delayReason?: string | null;
+  delayProof?: string | null;
+  courierName?: string | null;
+  updatedAt?: string;
   company: { name: string };
   items: { quantity: number; menuItem: { name: string } }[];
 };
 
-const STATUSES: OrderStatus[] = [
-  'PENDING',
-  'CONFIRMED',
-  'PREPARING',
-  'READY',
-  'DELIVERED',
-  'CANCELLED',
-];
+const STATUSES: OrderStatus[] = [...VENDOR_ORDER_STATUSES];
 
 function groupOrders(orders: Row[]) {
   const today = miriYmd();
@@ -44,19 +46,15 @@ function groupOrders(orders: Row[]) {
   return [...map.entries()];
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  PENDING: 'New',
-  CONFIRMED: 'Confirmed',
-  PREPARING: 'Preparing',
-  READY: 'On the way',
-  DELIVERED: 'Complete',
-  CANCELLED: 'Cancelled',
-};
+const STATUS_LABEL = ORDER_STATUS_LABEL;
 
 export default function VendorOrdersBoard() {
   const [orders, setOrders] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [delayFor, setDelayFor] = useState<string | null>(null);
+  const [delayReason, setDelayReason] = useState('');
+  const [delayProof, setDelayProof] = useState('');
   const seen = useRef<Set<string> | null>(null);
 
   const load = async (silent = false) => {
@@ -85,21 +83,34 @@ export default function VendorOrdersBoard() {
 
   useLivePoll(() => load(true), 4000);
 
-  const setStatus = async (id: string, status: OrderStatus) => {
+  const setStatus = async (
+    id: string,
+    status: OrderStatus,
+    extras?: { delayReason?: string; delayProof?: string }
+  ) => {
+    const row = orders.find((o) => o.id === id);
+    if (status === 'DELIVERED' && row && isDeliveryLate(row) && !extras?.delayReason) {
+      setDelayFor(id);
+      return;
+    }
     setUpdating(id);
     try {
       const res = await fetch(`/api/orders/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, ...extras }),
       });
-      if (!res.ok) throw new Error('fail');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'fail');
       setOrders((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, status } : o))
+        prev.map((o) => (o.id === id ? { ...o, status, ...data } : o))
       );
+      setDelayFor(null);
+      setDelayReason('');
+      setDelayProof('');
       toast.success(`Marked ${STATUS_LABEL[status]}`);
-    } catch {
-      toast.error('Could not update status');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not update status');
     } finally {
       setUpdating(null);
     }
@@ -115,8 +126,9 @@ export default function VendorOrdersBoard() {
           Orders
         </h1>
         <p className="mt-1 text-sm text-neutral-500">
-          Earliest delivery first, then time. When you hand it to the customer,
-          tap Complete.
+          Earliest delivery first. Mark Ready to pickup when the bag is waiting.
+          The rider taps On the way to the restaurant so no one else takes it.
+          Complete when the customer receives it.
         </p>
       </div>
 
@@ -159,6 +171,11 @@ export default function VendorOrdersBoard() {
                     {' · '}
                     {order.deliveryLocation}
                   </p>
+                  {order.courierName && (
+                    <p className="mt-1 text-sm font-medium text-emerald-800">
+                      Rider: {order.courierName}
+                    </p>
+                  )}
                 </div>
                 <p className="text-lg font-bold">{formatMYR(order.total)}</p>
               </div>
@@ -169,6 +186,18 @@ export default function VendorOrdersBoard() {
                   </li>
                 ))}
               </ul>
+                {isDeliveryLate(order) &&
+                  order.status !== 'DELIVERED' &&
+                  order.status !== 'CANCELLED' && (
+                    <p className="mt-2 text-xs font-semibold text-amber-800">
+                      Over 1 hour — rider must add a reason and photo
+                    </p>
+                  )}
+                {order.delayReason && (
+                  <p className="mt-2 text-xs text-amber-800">
+                    Delay: {order.delayReason}
+                  </p>
+                )}
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
                   <button
@@ -197,6 +226,53 @@ export default function VendorOrdersBoard() {
                     </option>
                   ))}
                 </select>
+                {delayFor === order.id && (
+                  <div className="mt-3 w-full space-y-2 rounded-xl border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+                    <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                      Over 1 hour — reason and photo required
+                    </p>
+                    <textarea
+                      value={delayReason}
+                      onChange={(e) => setDelayReason(e.target.value)}
+                      rows={2}
+                      className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+                      placeholder="Why was it late?"
+                    />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          setDelayProof(await readImageFileAsJpeg(file, 960, 0.78));
+                        } catch (err) {
+                          toast.error(
+                            err instanceof Error ? err.message : 'Could not read photo'
+                          );
+                        }
+                      }}
+                      className="w-full text-xs"
+                    />
+                    <button
+                      type="button"
+                      disabled={
+                        updating === order.id ||
+                        delayReason.trim().length < DELAY_REASON_MIN ||
+                        !delayProof
+                      }
+                      onClick={() =>
+                        void setStatus(order.id, 'DELIVERED', {
+                          delayReason: delayReason.trim(),
+                          delayProof,
+                        })
+                      }
+                      className="rounded-xl bg-emerald-500 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                    >
+                      Complete with proof
+                    </button>
+                  </div>
+                )}
               </div>
             </li>
                 ))}

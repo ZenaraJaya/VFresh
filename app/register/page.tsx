@@ -9,39 +9,79 @@ import toast from 'react-hot-toast';
 import PasswordInput from '@/components/shared/ui/PasswordInput';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
 import { safeCallbackPath } from '@/lib/safe-callback';
+import JobTitleField from '@/components/customer/account/JobTitleField';
 
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite')?.trim() ?? '';
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  const [joinExisting, setJoinExisting] = useState(false);
   const [companyId, setCompanyId] = useState('');
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [inviteCompany, setInviteCompany] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!inviteToken) return;
+    fetch(`/api/invites/${encodeURIComponent(inviteToken)}`)
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setInviteError(data.error || 'This staff link is no longer valid.');
+          return;
+        }
+        setInviteCompany(data.company?.name ?? 'your company');
+      })
+      .catch(() => setInviteError('Could not load this staff link.'));
+  }, [inviteToken]);
+
+  useEffect(() => {
+    if (inviteToken || !joinExisting) return;
     fetch('/api/companies')
       .then((res) => (res.ok ? res.json() : []))
       .then(setCompanies)
       .catch(() => toast.error('Could not load companies'));
-  }, []);
+  }, [inviteToken, joinExisting]);
+
+  const viaInvite = Boolean(inviteToken) && !inviteError && Boolean(inviteCompany);
 
   const canSubmit =
     Boolean(name.trim()) &&
     Boolean(email.trim()) &&
-    Boolean(companyId) &&
     password.length >= 8 &&
-    !submitting;
+    !submitting &&
+    (viaInvite || !joinExisting || Boolean(companyId));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (inviteToken && inviteError) {
+      toast.error(inviteError);
+      return;
+    }
     setSubmitting(true);
     try {
+      const body: Record<string, unknown> = {
+        name,
+        email,
+        password,
+        jobTitle: jobTitle.trim(),
+      };
+      if (inviteToken) {
+        body.inviteToken = inviteToken;
+      } else if (joinExisting) {
+        body.companyId = companyId;
+      }
+
       const res = await fetch('/api/customer/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, companyId }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -72,6 +112,9 @@ function RegisterForm() {
     }
   };
 
+  const field =
+    'w-full rounded-xl border border-neutral-200 bg-white py-2 pl-10 pr-4 outline-none focus:border-emerald-500 dark:border-neutral-700 dark:bg-neutral-950';
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -85,18 +128,34 @@ function RegisterForm() {
           VFresh
         </p>
         <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-          Create an account
+          {viaInvite ? 'Join your team' : 'Create an account'}
         </h1>
         <p className="text-sm text-neutral-500">
-          Pick the same company as your teammates. The first staff member who
-          registers joins that account; later staff share invoices and payment
-          history.
+          {viaInvite
+            ? `Register to handle orders and payments for ${inviteCompany}.`
+            : 'Your personal login. After this, register the company from Profile if you place office orders — an admin reviews it.'}
         </p>
       </div>
 
+      {inviteToken && inviteError ? (
+        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
+          {inviteError}{' '}
+          <Link href="/register" className="font-medium underline">
+            Register without a link
+          </Link>
+        </p>
+      ) : null}
+
+      {viaInvite ? (
+        <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+          Joining <span className="font-semibold">{inviteCompany}</span> as
+          staff.
+        </p>
+      ) : null}
+
       <div className="space-y-1">
         <label className="text-sm font-medium" htmlFor="name">
-          Name
+          Your name
           <RequiredMark />
         </label>
         <div className="relative">
@@ -107,35 +166,47 @@ function RegisterForm() {
             autoComplete="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl border border-neutral-200 bg-white py-2 pl-10 pr-4 outline-none focus:border-emerald-500 dark:border-neutral-700 dark:bg-neutral-950"
+            className={field}
           />
         </div>
       </div>
 
-      <div className="space-y-1">
-        <label className="text-sm font-medium" htmlFor="companyId">
-          Company
-          <RequiredMark />
+      <JobTitleField id="jobTitle" value={jobTitle} onChange={setJobTitle} />
+
+      {!inviteToken ? (
+        <label className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+          <input
+            type="checkbox"
+            checked={joinExisting}
+            onChange={(e) => setJoinExisting(e.target.checked)}
+            className="rounded border-neutral-300"
+          />
+          Join an approved company instead
         </label>
-        <select
-          id="companyId"
-          required
-          value={companyId}
-          onChange={(e) => setCompanyId(e.target.value)}
-          className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 outline-none focus:border-emerald-500 dark:border-neutral-700 dark:bg-neutral-950"
-        >
-          <option value="">Join your company…</option>
-          {companies.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <p className="text-xs text-neutral-500">
-          Same company as the first teammate who registered — you will share
-          invoices.
-        </p>
-      </div>
+      ) : null}
+
+      {!inviteToken && joinExisting ? (
+        <div className="space-y-1">
+          <label className="text-sm font-medium" htmlFor="companyId">
+            Company
+            <RequiredMark />
+          </label>
+          <select
+            id="companyId"
+            required
+            value={companyId}
+            onChange={(e) => setCompanyId(e.target.value)}
+            className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 outline-none focus:border-emerald-500 dark:border-neutral-700 dark:bg-neutral-950"
+          >
+            <option value="">Select company…</option>
+            {companies.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
 
       <div className="space-y-1">
         <label className="text-sm font-medium" htmlFor="email">
@@ -151,7 +222,7 @@ function RegisterForm() {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border border-neutral-200 bg-white py-2 pl-10 pr-4 outline-none focus:border-emerald-500 dark:border-neutral-700 dark:bg-neutral-950"
+            className={field}
           />
         </div>
       </div>
@@ -180,24 +251,27 @@ function RegisterForm() {
         Register
       </button>
 
-      <p className="text-center text-sm text-neutral-500">
-        Already have an account?{' '}
-        <Link
-          href={`/login${searchParams.get('callbackUrl') ? `?callbackUrl=${encodeURIComponent(searchParams.get('callbackUrl')!)}` : ''}`}
-          className="font-medium text-emerald-600 hover:underline"
-        >
-          Sign in
-        </Link>
-      </p>
-      <p className="text-center text-sm text-neutral-500">
-        Kitchen?{' '}
-        <Link
-          href="/vendor/signup"
-          className="font-medium text-emerald-600 hover:underline"
-        >
-          Vendor register
-        </Link>
-      </p>
+      <div className="space-y-3 pt-1 text-center text-sm">
+        <p className="text-neutral-500">
+          Already have an account?{' '}
+          <Link
+            href={`/login${searchParams.get('callbackUrl') ? `?callbackUrl=${encodeURIComponent(searchParams.get('callbackUrl')!)}` : ''}`}
+            className="inline-flex min-h-11 items-center px-2 font-medium text-emerald-600 hover:underline"
+          >
+            Sign in
+          </Link>
+        </p>
+        <p className="text-xs text-neutral-500">
+          Kitchen or stall?{' '}
+          <Link
+            href="/vendor/signup"
+            className="font-medium text-amber-700 hover:underline dark:text-amber-400"
+          >
+            Vendor register
+          </Link>
+          {' — '}reviewed by email within 48 hours (working hours).
+        </p>
+      </div>
     </form>
   );
 }

@@ -5,11 +5,17 @@ import {
   formatVendorSchedule,
   isVendorAcceptingOrders,
   vendorClosedLabel,
+  vendorOpenBadge,
 } from '@/lib/vendor-availability';
 import VendorLogo from './VendorLogo';
 
 export default function VendorCard({ vendor }: { vendor: VendorPublic }) {
   const accepting = isVendorAcceptingOrders({
+    ...vendor,
+    isOpen: vendor.isOpen ?? true,
+    status: 'APPROVED',
+  });
+  const badge = vendorOpenBadge({
     ...vendor,
     isOpen: vendor.isOpen ?? true,
     status: 'APPROVED',
@@ -45,7 +51,7 @@ export default function VendorCard({ vendor }: { vendor: VendorPublic }) {
               : 'bg-amber-50 text-amber-800'
           }`}
         >
-          {accepting ? 'Open' : 'Closed'}
+          {badge}
         </span>
       </div>
       <div className="space-y-2 p-4">

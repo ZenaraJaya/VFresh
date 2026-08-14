@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { toMoney } from '@/lib/pricing';
+import { USABLE_COMPANY_WHERE } from '@/lib/company';
 
 // GET - Dashboard summary.
 export async function GET() {
@@ -21,6 +22,7 @@ export async function GET() {
       revenue,
       pendingOrders,
       activeCompanies,
+      pendingCompanies,
       menuItemCount,
       recentOrders,
       windowOrders
@@ -31,7 +33,8 @@ export async function GET() {
         where: { status: { not: 'CANCELLED' } }
       }),
       prisma.order.count({ where: { status: 'PENDING' } }),
-      prisma.company.count({ where: { isActive: true } }),
+      prisma.company.count({ where: USABLE_COMPANY_WHERE }),
+      prisma.company.count({ where: { status: 'PENDING' } }),
       prisma.menuItem.count(),
       prisma.order.findMany({
         take: 8,
@@ -64,6 +67,7 @@ export async function GET() {
       totalRevenue: toMoney(revenue._sum.total ?? 0),
       pendingOrders,
       activeCompanies,
+      pendingCompanies,
       menuItemCount,
       recentOrders,
       revenueByDay: [...buckets.entries()].map(([date, total]) => ({

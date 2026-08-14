@@ -8,6 +8,7 @@ import { useCart } from '@/context/CartContext';
 import {
   isVendorAcceptingOrders,
   vendorClosedLabel,
+  vendorPauseMessage,
 } from '@/lib/vendor-availability';
 import { maxCartQty } from '@/lib/daily-pack-qty';
 import type { MenuItem } from '@/types';
@@ -38,7 +39,15 @@ export default function AddToCartPanel({ item }: { item: MenuItem }) {
 
   const handleAdd = () => {
     if (!accepting) {
-      toast.error('This vendor is temporarily closed');
+      toast.error(
+        item.vendor
+          ? vendorPauseMessage({
+              ...item.vendor,
+              isOpen: item.vendor.isOpen ?? true,
+              status: 'APPROVED',
+            })
+          : 'This vendor is temporarily closed'
+      );
       return;
     }
     const qty = Math.min(quantity, Math.max(1, max));

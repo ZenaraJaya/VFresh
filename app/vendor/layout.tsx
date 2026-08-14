@@ -47,6 +47,8 @@ export default async function VendorLayout({
           closedUntil: vendor.closedUntil,
           openTime: vendor.openTime,
           closeTime: vendor.closeTime,
+          lunchStart: vendor.lunchStart,
+          lunchEnd: vendor.lunchEnd,
           weeklyHours: vendor.weeklyHours,
         }}
       />

@@ -15,8 +15,8 @@ export default function VendorPendingPage() {
           Awaiting approval
         </h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          An admin will review your kitchen. When approved, you will receive an
-          email with a temporary login password.
+          Your registration is still in review. You will get a response within
+          48 hours (working hours) via email. Thank you for your patience.
         </p>
         <Link
           href="/login"

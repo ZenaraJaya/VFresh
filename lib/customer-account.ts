@@ -1,14 +1,11 @@
 import { prisma } from '@/lib/db';
 import { requireCustomer } from '@/lib/auth-guard';
+import { ORDER_STATUS_LABEL } from '@/lib/order-status';
 import type { OrderStatus, Prisma } from '@prisma/client';
 
 export const ORDER_LABEL: Record<string, string> = {
+  ...ORDER_STATUS_LABEL,
   PENDING: 'Receive',
-  CONFIRMED: 'Confirmed',
-  PREPARING: 'Preparing',
-  READY: 'On the way',
-  DELIVERED: 'Complete',
-  CANCELLED: 'Cancelled',
 };
 
 export const INVOICE_LABEL: Record<string, string> = {
@@ -24,6 +21,8 @@ export const ACTIVE_ORDER_STATUSES: OrderStatus[] = [
   'CONFIRMED',
   'PREPARING',
   'READY',
+  'HEADING_TO_VENDOR',
+  'OUT_FOR_DELIVERY',
 ];
 
 export function ymd(value: Date) {
@@ -32,7 +31,8 @@ export function ymd(value: Date) {
 
 export function customerOrderWhere(
   customerId: string,
-  email: string
+  email: string,
+  companyId?: string | null
 ): Prisma.OrderWhereInput {
   return {
     OR: [
@@ -40,13 +40,15 @@ export function customerOrderWhere(
       ...(email
         ? [{ employeeEmail: { equals: email, mode: 'insensitive' as const } }]
         : []),
+      ...(companyId ? [{ companyId }] : []),
     ],
   };
 }
 
 export function customerScheduleWhere(
   customerId: string,
-  email: string
+  email: string,
+  companyId?: string | null
 ): Prisma.RecurringOrderWhereInput {
   return {
     active: true,
@@ -55,6 +57,7 @@ export function customerScheduleWhere(
       ...(email
         ? [{ employeeEmail: { equals: email, mode: 'insensitive' as const } }]
         : []),
+      ...(companyId ? [{ companyId }] : []),
     ],
   };
 }
@@ -78,6 +81,9 @@ export async function loadCustomerAccount(callbackUrl: string) {
           billingEmail: true,
           billingAddress: true,
           phone: true,
+          isActive: true,
+          status: true,
+          reviewNote: true,
         },
       },
     },

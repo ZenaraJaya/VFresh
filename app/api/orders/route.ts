@@ -4,10 +4,13 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
 import { authOptions } from '@/lib/auth';
 import { calculateTotals, toMoney } from '@/lib/pricing';
-import { isVendorAcceptingOrders } from '@/lib/vendor-availability';
+import { isVendorAcceptingOrders, isVendorOnLunchBreak } from '@/lib/vendor-availability';
 import { assertSellableForCheckout } from '@/lib/daily-pack';
 import { newOrderNumber } from '@/lib/order-number';
 import { createStandingOrders } from '@/lib/standing-orders';
+import { USABLE_COMPANY_WHERE } from '@/lib/company';
+import { normalizeMyPhone } from '@/lib/phone';
+import { deliveryTrackPayload } from '@/lib/delivery-sla';
 
 const orderSchema = z.object({
   companyId: z.string().min(1),
@@ -68,11 +71,11 @@ export async function POST(req: NextRequest) {
     }
 
     const company = await prisma.company.findFirst({
-      where: { id: data.companyId, isActive: true },
+      where: { id: data.companyId, ...USABLE_COMPANY_WHERE },
     });
     if (!company) {
       return NextResponse.json(
-        { error: 'Company account not found or inactive' },
+        { error: 'Company account is not approved yet or is inactive' },
         { status: 400 }
       );
     }
@@ -119,7 +122,11 @@ export async function POST(req: NextRequest) {
       const vendor = items[0].vendor!;
       if (!isVendorAcceptingOrders(vendor)) {
         return NextResponse.json(
-          { error: `${vendor.businessName} is closed and not taking orders` },
+          {
+            error: isVendorOnLunchBreak(vendor)
+              ? `${vendor.businessName} is on lunch break and not taking orders`
+              : `${vendor.businessName} is closed and not taking orders`,
+          },
           { status: 400 }
         );
       }
@@ -147,7 +154,7 @@ export async function POST(req: NextRequest) {
       employeeName: data.employeeName.trim(),
       employeeEmail:
         nullIfBlank(data.employeeEmail) ?? session.user.email ?? null,
-      employeePhone: nullIfBlank(data.employeePhone),
+      employeePhone: normalizeMyPhone(data.employeePhone) ?? null,
       department: nullIfBlank(data.department),
       deliveryLocation: data.deliveryLocation.trim(),
       deliveryDate: new Date(data.deliveryDate),
@@ -267,9 +274,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    return NextResponse.json(order, {
-      headers: { 'Cache-Control': 'no-store' },
-    });
+    return NextResponse.json(
+      {
+        ...order,
+        track: deliveryTrackPayload(order),
+      },
+      {
+        headers: { 'Cache-Control': 'no-store' },
+      }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to fetch order' },

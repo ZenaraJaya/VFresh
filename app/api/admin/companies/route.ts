@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { normalizeMyPhone } from '@/lib/phone';
 
 const companySchema = z.object({
   name: z.string().min(1).max(160),
@@ -21,8 +22,18 @@ export async function GET() {
     }
 
     const companies = await prisma.company.findMany({
-      orderBy: { name: 'asc' },
-      include: { _count: { select: { orders: true } } }
+      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+      include: {
+        registeredBy: {
+          select: { id: true, name: true, email: true, jobTitle: true },
+        },
+        _count: { select: { orders: true, customers: true, invites: true } },
+        orders: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+          select: { createdAt: true, orderNumber: true },
+        },
+      },
     });
 
     return NextResponse.json(companies);
@@ -65,8 +76,9 @@ export async function POST(req: NextRequest) {
         name: data.name.trim(),
         billingEmail: data.billingEmail.toLowerCase().trim(),
         billingAddress: data.billingAddress?.trim() || null,
-        phone: data.phone?.trim() || null,
-        isActive: data.isActive
+        phone: normalizeMyPhone(data.phone) ?? null,
+        isActive: true,
+        status: 'APPROVED',
       }
     });
 

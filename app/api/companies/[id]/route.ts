@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { USABLE_COMPANY_WHERE } from '@/lib/company';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     const { id } = await params;
 
     const company = await prisma.company.findFirst({
-      where: { id, isActive: true },
+      where: { id, ...USABLE_COMPANY_WHERE },
       select: { id: true, name: true, isActive: true }
     });
 

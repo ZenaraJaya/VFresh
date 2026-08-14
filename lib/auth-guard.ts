@@ -45,3 +45,17 @@ export async function requireCustomer(callbackUrl = '/checkout') {
 
   return session;
 }
+
+export async function requireCourier(callbackUrl = '/delivery') {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    redirect(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  }
+
+  if (session.user.role !== 'DELIVERY') {
+    redirect('/delivery/wrong-account');
+  }
+
+  return session;
+}

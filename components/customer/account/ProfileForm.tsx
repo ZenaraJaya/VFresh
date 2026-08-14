@@ -5,18 +5,23 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 import { FIELD } from '@/components/customer/account/ui';
+import JobTitleField from '@/components/customer/account/JobTitleField';
+import PhoneInput from '@/components/shared/ui/PhoneInput';
 
 export default function ProfileForm({
   name,
   phone,
+  jobTitle,
 }: {
   name: string;
   phone: string;
+  jobTitle: string;
 }) {
   const router = useRouter();
   const { update } = useSession();
   const [fullName, setFullName] = useState(name);
   const [phoneValue, setPhoneValue] = useState(phone);
+  const [roleValue, setRoleValue] = useState(jobTitle);
   const [saving, setSaving] = useState(false);
 
   const save = async (e: React.FormEvent) => {
@@ -26,7 +31,11 @@ export default function ProfileForm({
       const res = await fetch('/api/account/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: fullName, phone: phoneValue }),
+        body: JSON.stringify({
+          name: fullName,
+          phone: phoneValue,
+          jobTitle: roleValue.trim(),
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not save');
@@ -58,13 +67,17 @@ export default function ProfileForm({
         <label className="text-sm font-medium" htmlFor="profile-phone">
           Phone
         </label>
-        <input
+        <PhoneInput
           id="profile-phone"
           value={phoneValue}
-          onChange={(e) => setPhoneValue(e.target.value)}
-          className={FIELD}
+          onChange={setPhoneValue}
         />
       </div>
+      <JobTitleField
+        id="profile-job"
+        value={roleValue}
+        onChange={setRoleValue}
+      />
       <button
         type="submit"
         disabled={saving}

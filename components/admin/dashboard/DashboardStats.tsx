@@ -27,6 +27,8 @@ const STATUS_STYLES: Record<string, string> = {
   PREPARING:
     'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400',
   READY: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-400',
+  HEADING_TO_VENDOR: 'bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300',
+  OUT_FOR_DELIVERY: 'bg-teal-100 text-teal-800 dark:bg-teal-500/20 dark:text-teal-300',
   DELIVERED:
     'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400',
   CANCELLED: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'
@@ -100,6 +102,9 @@ export default function DashboardStats() {
         <p className="mt-1 text-neutral-500 dark:text-neutral-400">
           {stats.pendingOrders} order{stats.pendingOrders === 1 ? '' : 's'}{' '}
           waiting to be confirmed
+          {stats.pendingCompanies
+            ? ` · ${stats.pendingCompanies} company registration${stats.pendingCompanies === 1 ? '' : 's'} to review`
+            : ''}
         </p>
       </div>
 

@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { isVendorAcceptingOrders } from '@/lib/vendor-availability';
+import { isVendorAcceptingOrders, isVendorOnLunchBreak } from '@/lib/vendor-availability';
 import { materializeStandingOrders } from '@/lib/standing-orders';
 import { compareDeliveryPriority } from '@/lib/order-priority';
+import { isDeliveryLate } from '@/lib/delivery-sla';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,12 +57,14 @@ export async function GET() {
 
   return NextResponse.json({
     accepting: isVendorAcceptingOrders(vendor),
+    onLunch: isVendorOnLunchBreak(vendor),
     address: vendor.address,
     slug: vendor.slug,
     businessName: vendor.businessName,
     menuCount,
     availableCount,
     newOrders,
+    delayedDeliveries: upcoming.filter((o) => isDeliveryLate(o)).length,
     recentOrders: upcoming.sort(compareDeliveryPriority).slice(0, 5),
   });
 }

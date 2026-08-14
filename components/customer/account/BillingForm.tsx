@@ -6,6 +6,7 @@ import { Building2, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { PaymentMethod } from '@/types';
 import { FIELD } from '@/components/customer/account/ui';
+import PhoneInput from '@/components/shared/ui/PhoneInput';
 
 export type BillingValues = {
   paymentMethod: PaymentMethod;
@@ -174,11 +175,10 @@ export default function BillingForm({ initial }: { initial: BillingValues }) {
           />
         </Field>
         <Field label="Billing phone" id="bp">
-          <input
+          <PhoneInput
             id="bp"
             value={form.billingPhone}
-            onChange={(e) => set('billingPhone', e.target.value)}
-            className={FIELD}
+            onChange={(value) => set('billingPhone', value)}
           />
         </Field>
         <Field label="State" id="bs">

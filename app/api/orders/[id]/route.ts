@@ -9,9 +9,20 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 const patchSchema = z.object({
   status: z
-    .enum(['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'CANCELLED'])
+    .enum([
+      'PENDING',
+      'CONFIRMED',
+      'PREPARING',
+      'READY',
+      'HEADING_TO_VENDOR',
+      'OUT_FOR_DELIVERY',
+      'DELIVERED',
+      'CANCELLED',
+    ])
     .optional(),
-  paymentStatus: z.enum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']).optional()
+  paymentStatus: z.enum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']).optional(),
+  delayReason: z.string().max(1000).optional(),
+  delayProof: z.string().max(400_000).optional(),
 });
 
 // GET - Full order detail. Admin only: orders carry employee contact details.
@@ -75,14 +86,17 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { status, paymentStatus } = parsed.data;
+    const { status, paymentStatus, delayReason, delayProof } = parsed.data;
     if (!isAdmin && paymentStatus) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     if (status) {
       try {
-        const order = await applyOrderStatusStock(id, status);
+        const order = await applyOrderStatusStock(id, status, {
+          delayReason,
+          delayProof,
+        });
         if (paymentStatus) {
           const paid = await prisma.order.update({
             where: { id },

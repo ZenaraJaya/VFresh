@@ -10,6 +10,10 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (session?.user?.role === 'CUSTOMER') {
+    const me = await prisma.customer.findUnique({
+      where: { id: session.user.id },
+      select: { companyId: true },
+    });
     const rows = await prisma.recurringOrder.findMany({
       where: {
         active: true,
@@ -21,6 +25,7 @@ export async function GET(req: NextRequest) {
               mode: 'insensitive',
             },
           },
+          ...(me?.companyId ? [{ companyId: me.companyId }] : []),
         ],
       },
       include: { vendor: { select: { businessName: true } } },
@@ -76,6 +81,10 @@ export async function PATCH(req: NextRequest) {
 
   const session = await getServerSession(authOptions);
   if (session?.user?.role === 'CUSTOMER') {
+    const me = await prisma.customer.findUnique({
+      where: { id: session.user.id },
+      select: { companyId: true },
+    });
     const existing = await prisma.recurringOrder.findFirst({
       where: {
         id: parsed.data.id,
@@ -87,6 +96,7 @@ export async function PATCH(req: NextRequest) {
               mode: 'insensitive',
             },
           },
+          ...(me?.companyId ? [{ companyId: me.companyId }] : []),
         ],
       },
     });

@@ -11,7 +11,7 @@ if (process.env.VERCEL) {
 }
 
 /** Bump when Customer/Order fields change so HMR drops a stale Prisma singleton. */
-const PRISMA_CLIENT_REV = 4;
+const PRISMA_CLIENT_REV = 16;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -61,13 +61,43 @@ function customerFieldNames(client: PrismaClient): string[] {
   return model?.fields?.map((field) => field.name) ?? [];
 }
 
+function companyFieldNames(client: PrismaClient): string[] {
+  const model = (
+    client as unknown as {
+      _runtimeDataModel?: {
+        models?: Record<string, { fields?: Array<{ name: string }> }>;
+      };
+    }
+  )._runtimeDataModel?.models?.Company;
+  return model?.fields?.map((field) => field.name) ?? [];
+}
+
+function orderFieldNames(client: PrismaClient): string[] {
+  const model = (
+    client as unknown as {
+      _runtimeDataModel?: {
+        models?: Record<string, { fields?: Array<{ name: string }> }>;
+      };
+    }
+  )._runtimeDataModel?.models?.Order;
+  return model?.fields?.map((field) => field.name) ?? [];
+}
+
 function clientLooksCurrent(client: PrismaClient) {
   const fields = customerFieldNames(client);
+  const companyFields = companyFieldNames(client);
+  const orderFields = orderFieldNames(client);
   return (
     fields.includes('companyId') &&
     fields.includes('billingName') &&
     fields.includes('paymentMethod') &&
-    typeof client.recurringOrder?.findMany === 'function'
+    fields.includes('companyRole') &&
+    companyFields.includes('status') &&
+    orderFields.includes('courierId') &&
+    orderFields.includes('pickedUpAt') &&
+    typeof client.recurringOrder?.findMany === 'function' &&
+    typeof client.companyInvite?.findMany === 'function' &&
+    typeof client.courier?.findMany === 'function'
   );
 }
 

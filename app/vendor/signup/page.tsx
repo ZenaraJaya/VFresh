@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Leaf, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
+import PhoneInput from '@/components/shared/ui/PhoneInput';
 
 export default function VendorSignupPage() {
   const router = useRouter();
@@ -63,8 +64,8 @@ export default function VendorSignupPage() {
             Vendor register
           </h1>
           <p className="text-sm text-neutral-500">
-            No password yet. After approval, admin emails you a temporary login
-            password.
+            Register your kitchen or stall. We review within 48 hours (working
+            hours) and email a temporary password after approval.
           </p>
         </div>
 
@@ -106,15 +107,11 @@ export default function VendorSignupPage() {
               Phone
               <RequiredMark />
             </label>
-            <input
-              type="tel"
+            <PhoneInput
+              id="vendor-signup-phone"
               required
               value={form.phone}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, phone: e.target.value }))
-              }
-              className="w-full rounded-xl border border-neutral-200 px-4 py-2 outline-none focus:border-emerald-500 dark:border-neutral-700 dark:bg-neutral-950"
-              placeholder="+60 …"
+              onChange={(phone) => setForm((f) => ({ ...f, phone }))}
             />
           </div>
         </div>

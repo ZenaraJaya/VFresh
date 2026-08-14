@@ -3,10 +3,12 @@ import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { normalizeMyPhone } from '@/lib/phone';
 
 const patchSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   phone: z.string().max(40).optional(),
+  jobTitle: z.string().max(80).optional(),
   paymentMethod: z.enum(['COMPANY_ACCOUNT', 'CREDIT_CARD']).optional(),
   billingName: z.string().max(120).optional(),
   billingEmail: z.union([z.email(), z.literal('')]).optional(),
@@ -33,8 +35,10 @@ const publicSelect = {
   name: true,
   email: true,
   phone: true,
+  jobTitle: true,
   paymentMethod: true,
   companyId: true,
+  companyRole: true,
   billingName: true,
   billingEmail: true,
   billingPhone: true,
@@ -90,11 +94,15 @@ export async function PATCH(req: Request) {
     where: { id: session.user.id },
     data: {
       name: p.name?.trim(),
-      phone: emptyToNull(p.phone),
+      phone: p.phone !== undefined ? normalizeMyPhone(p.phone) : undefined,
+      jobTitle: emptyToNull(p.jobTitle),
       paymentMethod: p.paymentMethod,
       billingName: emptyToNull(p.billingName),
       billingEmail: emptyToNull(p.billingEmail),
-      billingPhone: emptyToNull(p.billingPhone),
+      billingPhone:
+        p.billingPhone !== undefined
+          ? normalizeMyPhone(p.billingPhone)
+          : undefined,
       billingAddress: emptyToNull(p.billingAddress),
       billingCity: emptyToNull(p.billingCity),
       billingPostcode: emptyToNull(p.billingPostcode),

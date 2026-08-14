@@ -39,7 +39,7 @@ export function invoiceTone(status: string) {
 export function orderTone(status: string) {
   if (status === 'DELIVERED') return 'success' as const;
   if (status === 'CANCELLED') return 'danger' as const;
-  if (status === 'READY' || status === 'PREPARING') return 'info' as const;
+  if (status === 'READY' || status === 'PREPARING' || status === 'HEADING_TO_VENDOR' || status === 'OUT_FOR_DELIVERY') return 'info' as const;
   return 'warn' as const;
 }
 

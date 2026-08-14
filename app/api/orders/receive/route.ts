@@ -5,6 +5,8 @@ import { markOrderReceived } from '@/lib/daily-pack';
 
 const schema = z.object({
   orderNumber: z.string().min(1),
+  delayReason: z.string().max(1000).optional(),
+  delayProof: z.string().max(400_000).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -22,7 +24,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    const updated = await markOrderReceived(order.id);
+    const updated = await markOrderReceived(order.id, {
+      delayReason: parsed.data.delayReason,
+      delayProof: parsed.data.delayProof,
+    });
     return NextResponse.json(updated);
   } catch (err) {
     return NextResponse.json(

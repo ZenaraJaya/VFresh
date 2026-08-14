@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { slugify } from '@/lib/slug';
 import { generateTempPassword } from '@/lib/password';
-import type { PremisesType } from '@prisma/client';
+import { normalizeMyPhone } from '@/lib/phone';
+import { emailAlreadyUsed } from '@/lib/email-taken';
 
 const PREMISES: PremisesType[] = ['HOMEBASED', 'OTHER'];
 
@@ -14,7 +15,7 @@ export async function POST(req: Request) {
       .toLowerCase()
       .trim();
     const businessName = String(body.businessName ?? '').trim();
-    const phone = String(body.phone ?? '').trim();
+    const phone = normalizeMyPhone(String(body.phone ?? '')) ?? '';
     const description = String(body.description ?? '').trim();
     const address = String(body.address ?? '').trim();
     const registrationNumber = body.registrationNumber
@@ -39,12 +40,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const existingAdmin = await prisma.admin.findUnique({ where: { email } });
-    const existingVendor = await prisma.vendor.findUnique({ where: { email } });
-    const existingCustomer = await prisma.customer.findUnique({
-      where: { email },
-    });
-    if (existingAdmin || existingVendor || existingCustomer) {
+    if (await emailAlreadyUsed(email)) {
       return NextResponse.json(
         { error: 'An account with this email already exists.' },
         { status: 409 }

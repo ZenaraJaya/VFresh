@@ -8,6 +8,7 @@ import {
   formatVendorSchedule,
   isVendorAcceptingOrders,
   vendorClosedLabel,
+  vendorOpenBadge,
   VENDOR_HOURS_SELECT,
 } from '@/lib/vendor-availability';
 import type { MenuItem } from '@/types';
@@ -28,6 +29,7 @@ export default async function VendorStorePage({
   if (!vendor) notFound();
 
   const accepting = isVendorAcceptingOrders(vendor);
+  const badge = vendorOpenBadge(vendor);
   const closedLabel = vendorClosedLabel(vendor);
   const hours = formatVendorSchedule(vendor);
 
@@ -81,7 +83,7 @@ export default async function VendorStorePage({
                   : 'bg-amber-50 text-amber-800'
               }`}
             >
-              {accepting ? 'Open' : 'Temporarily closed'}
+              {badge === 'Open' ? 'Open' : badge === 'Lunch' ? 'Lunch break' : 'Temporarily closed'}
             </span>
           </div>
           {vendor.description && (

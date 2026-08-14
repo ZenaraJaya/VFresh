@@ -288,6 +288,25 @@ async function main() {
   });
   console.log(`customer: ${customerEmail}`);
 
+  const courierEmail = (
+    process.env.SEED_COURIER_EMAIL ?? 'courier@vfresh.my'
+  )
+    .toLowerCase()
+    .trim();
+  const courierPassword =
+    process.env.SEED_COURIER_PASSWORD ?? 'VFreshCourier123!';
+  await prisma.courier.upsert({
+    where: { email: courierEmail },
+    update: { name: 'Demo Rider' },
+    create: {
+      email: courierEmail,
+      name: 'Demo Rider',
+      phone: '+60123456789',
+      password: await bcrypt.hash(courierPassword, 10),
+    },
+  });
+  console.log(`courier: ${courierEmail}`);
+
   // Wipe orphan items without a vendor, then seed under vendors.
   await prisma.menuItem.deleteMany({});
   let created = 0;
