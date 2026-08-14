@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { isValidPassword } from '@/lib/password-rules';
+import { USABLE_COMPANY_WHERE } from '@/lib/company';
 import { findActiveInvite } from '@/lib/company-invite';
 import { emailAlreadyUsed } from '@/lib/email-taken';
 
