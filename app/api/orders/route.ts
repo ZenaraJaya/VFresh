@@ -8,7 +8,7 @@ import { isVendorAcceptingOrders, isVendorOnLunchBreak } from '@/lib/vendor-avai
 import { assertSellableForCheckout } from '@/lib/daily-pack';
 import { newOrderNumber } from '@/lib/order-number';
 import { createStandingOrders } from '@/lib/standing-orders';
-import { USABLE_COMPANY_WHERE } from '@/lib/company';
+import { isCompanyUsable } from '@/lib/company';
 import { normalizeMyPhone } from '@/lib/phone';
 import { deliveryTrackPayload } from '@/lib/delivery-sla';
 
@@ -70,19 +70,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Account not found' }, { status: 401 });
     }
 
-    const company = await prisma.company.findFirst({
-      where: { id: data.companyId, ...USABLE_COMPANY_WHERE },
+    const company = await prisma.company.findUnique({
+      where: { id: data.companyId },
     });
-    if (!company) {
+    if (!company || company.status === 'REJECTED') {
       return NextResponse.json(
-        { error: 'Company account is not approved yet or is inactive' },
+        { error: 'Company account is not available' },
         { status: 400 }
       );
     }
 
-    if (me.companyId && me.companyId !== company.id) {
+    const ownCompany = me.companyId === company.id;
+    if (me.companyId && !ownCompany) {
       return NextResponse.json(
         { error: 'Orders must use your registered company' },
+        { status: 400 }
+      );
+    }
+
+    if (!ownCompany && !isCompanyUsable(company)) {
+      return NextResponse.json(
+        { error: 'Select an approved company account' },
+        { status: 400 }
+      );
+    }
+
+    if (
+      data.paymentMethod === 'COMPANY_ACCOUNT' &&
+      !isCompanyUsable(company)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'Company invoicing starts after an admin approves your workplace. Pay by card until then.',
+        },
         { status: 400 }
       );
     }

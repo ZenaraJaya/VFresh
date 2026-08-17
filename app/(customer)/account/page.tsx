@@ -5,7 +5,7 @@ import ProfileForm from '@/components/customer/account/ProfileForm';
 import PasswordForm from '@/components/customer/account/PasswordForm';
 import InviteLinkPanel from '@/components/customer/account/InviteLinkPanel';
 import RegisterCompanyForm from '@/components/customer/account/RegisterCompanyForm';
-import { PageIntro, SectionCard } from '@/components/customer/account/ui';
+import { PageIntro, SectionCard, StatusBadge } from '@/components/customer/account/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,9 +69,19 @@ export default async function AccountProfilePage() {
                 <span className="font-semibold text-neutral-900 dark:text-white">
                   {me.company.name}
                 </span>
-                {' · '}
-                {companyStatusLabel(me.company.status)}
-                {' · '}
+                <span className="mx-2">
+                  <StatusBadge
+                    tone={
+                      me.company.status === 'APPROVED'
+                        ? 'success'
+                        : me.company.status === 'REJECTED'
+                          ? 'danger'
+                          : 'warn'
+                    }
+                  >
+                    {companyStatusLabel(me.company.status)}
+                  </StatusBadge>
+                </span>
                 {isOwner ? 'You manage this account' : 'Staff access'}
                 {me.jobTitle ? ` · ${me.jobTitle}` : ''}.
               </p>

@@ -51,7 +51,14 @@ const publicSelect = {
   cardLast4: true,
   cardExpMonth: true,
   cardExpYear: true,
-  company: { select: { id: true, name: true } },
+  company: {
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      isActive: true,
+    },
+  },
 } as const;
 
 export async function GET() {

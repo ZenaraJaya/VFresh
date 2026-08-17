@@ -64,11 +64,11 @@ export function parseHm(hm: string): number | null {
 export function formatHmLabel(hm: string) {
   const mins = parseHm(hm);
   if (mins == null) return hm;
-  const h = Math.floor(mins / 60);
+  const h24 = Math.floor(mins / 60);
   const m = mins % 60;
-  const d = new Date();
-  d.setHours(h, m, 0, 0);
-  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const h12 = h24 % 12 || 12;
+  const period = h24 >= 12 ? 'PM' : 'AM';
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
 }
 
 export function lunchWindow(vendor: {
@@ -355,12 +355,14 @@ export function vendorClosedLabel(vendor: VendorHours) {
 }
 
 function shortDateTime(d: Date) {
-  return d.toLocaleString([], {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kuching',
     day: 'numeric',
     month: 'short',
     hour: 'numeric',
     minute: '2-digit',
-  });
+    hour12: true,
+  }).format(d);
 }
 
 /** Group day indexes into "Mon–Fri, Sun" style labels. */

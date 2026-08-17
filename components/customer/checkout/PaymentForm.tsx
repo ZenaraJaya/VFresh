@@ -7,13 +7,18 @@ import RequiredMark from '@/components/shared/ui/RequiredMark';
 interface PaymentFormProps {
   value: PaymentMethod;
   onChange: (method: PaymentMethod) => void;
+  companyInvoiceEnabled?: boolean;
 }
 
 const CARD_PAYMENT_ENABLED = Boolean(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 );
 
-export default function PaymentForm({ value, onChange }: PaymentFormProps) {
+export default function PaymentForm({
+  value,
+  onChange,
+  companyInvoiceEnabled = true,
+}: PaymentFormProps) {
   return (
     <fieldset className="space-y-3">
       <legend className="mb-3 text-lg font-semibold">
@@ -48,10 +53,14 @@ export default function PaymentForm({ value, onChange }: PaymentFormProps) {
       </label>
 
       <label
-        className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${
+        className={`flex items-start gap-3 rounded-xl border p-4 transition ${
+          !companyInvoiceEnabled
+            ? 'cursor-not-allowed opacity-60'
+            : 'cursor-pointer'
+        } ${
           value === 'COMPANY_ACCOUNT'
             ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10'
-            : 'border-neutral-200 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800'
+            : 'border-neutral-200 hover:bg-white hover:text-neutral-900 dark:border-neutral-700'
         }`}
       >
         <input
@@ -59,6 +68,7 @@ export default function PaymentForm({ value, onChange }: PaymentFormProps) {
           name="paymentMethod"
           value="COMPANY_ACCOUNT"
           checked={value === 'COMPANY_ACCOUNT'}
+          disabled={!companyInvoiceEnabled}
           onChange={() => onChange('COMPANY_ACCOUNT')}
           className="mt-1"
         />
@@ -66,7 +76,9 @@ export default function PaymentForm({ value, onChange }: PaymentFormProps) {
         <span>
           <span className="block font-medium">Company invoice</span>
           <span className="block text-sm text-neutral-600 dark:text-neutral-400">
-            Added to your company&apos;s monthly invoice, payable in 30 days.
+            {companyInvoiceEnabled
+              ? "Added to your company's monthly invoice, payable in 30 days."
+              : 'Available after an admin approves your workplace.'}
           </span>
         </span>
       </label>

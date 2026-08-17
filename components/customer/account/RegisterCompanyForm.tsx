@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 import { FIELD } from '@/components/customer/account/ui';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
@@ -13,6 +14,7 @@ export default function RegisterCompanyForm({
   defaultJobTitle: string;
 }) {
   const router = useRouter();
+  const { update } = useSession();
   const [name, setName] = useState('');
   const [billingEmail, setBillingEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -39,6 +41,9 @@ export default function RegisterCompanyForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not register company');
+      if (data.company?.id) {
+        await update({ companyId: data.company.id });
+      }
       toast.success('Company submitted for admin review');
       router.refresh();
     } catch (err) {

@@ -50,7 +50,10 @@ export default function CheckoutForm() {
   const { lines, clear } = useCart();
   const vendorGroups = groupCartByVendor(lines);
 
-  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [companies, setCompanies] = useState<
+    { id: string; name: string; status?: string }[]
+  >([]);
+  const [ownCompanyId, setOwnCompanyId] = useState<string | undefined>();
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>('CREDIT_CARD');
   const [submitting, setSubmitting] = useState(false);
@@ -77,6 +80,7 @@ export default function CheckoutForm() {
     }
     if (session?.user?.companyId) {
       setValue('companyId', session.user.companyId);
+      setOwnCompanyId(session.user.companyId);
     }
   }, [session, setValue]);
 
@@ -89,13 +93,34 @@ export default function CheckoutForm() {
         if (profile.phone || profile.billingPhone) {
           setValue('employeePhone', profile.phone || profile.billingPhone);
         }
-        if (profile.paymentMethod === 'COMPANY_ACCOUNT' || profile.paymentMethod === 'CREDIT_CARD') {
+        if (
+          profile.paymentMethod === 'COMPANY_ACCOUNT' ||
+          profile.paymentMethod === 'CREDIT_CARD'
+        ) {
           setPaymentMethod(profile.paymentMethod);
+        }
+        if (profile.company?.id) {
+          setValue('companyId', profile.company.id);
+          setOwnCompanyId(profile.company.id);
+          setCompanies((prev) =>
+            prev.some((c) => c.id === profile.company.id)
+              ? prev
+              : [profile.company, ...prev]
+          );
         }
       })
       .catch(() => {});
   }, [session, setValue]);
 
+  const linkedCompany = companies.find((c) => c.id === ownCompanyId);
+  const companyInvoiceEnabled =
+    !ownCompanyId || linkedCompany?.status === 'APPROVED';
+
+  useEffect(() => {
+    if (!companyInvoiceEnabled && paymentMethod === 'COMPANY_ACCOUNT') {
+      setPaymentMethod('CREDIT_CARD');
+    }
+  }, [companyInvoiceEnabled, paymentMethod]);
   const deliveryDate = watch('deliveryDate');
   const repeatWeekly = watch('repeatWeekly');
   const deliveryWeekday = weekdayFromYmd(deliveryDate);
@@ -103,7 +128,15 @@ export default function CheckoutForm() {
   useEffect(() => {
     fetch('/api/companies')
       .then((res) => (res.ok ? res.json() : []))
-      .then(setCompanies)
+      .then((rows: { id: string; name: string; status?: string }[]) => {
+        if (!Array.isArray(rows)) return;
+        setCompanies((prev) => {
+          const extra = prev.filter(
+            (row) => !rows.some((item) => item.id === row.id)
+          );
+          return [...extra, ...rows];
+        });
+      })
       .catch(() => toast.error('Could not load company accounts'));
   }, []);
 
@@ -181,13 +214,18 @@ export default function CheckoutForm() {
             Company account
             <RequiredMark />
           </label>
-          {session?.user?.companyId ? (
+          {ownCompanyId ? (
             <>
               <input type="hidden" {...register('companyId')} />
               <p className={`${inputClass} bg-neutral-50 dark:bg-neutral-900`}>
-                {companies.find((c) => c.id === session.user.companyId)?.name ??
-                  'Your company'}
+                {linkedCompany?.name ?? 'Your company'}
               </p>
+              {linkedCompany?.status === 'PENDING' ? (
+                <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                  Waiting for admin review. You can still order and pay by
+                  card. Company invoicing starts after approval.
+                </p>
+              ) : null}
             </>
           ) : (
             <select id="companyId" {...register('companyId')} className={inputClass}>
@@ -372,7 +410,11 @@ export default function CheckoutForm() {
         </div>
       </fieldset>
 
-      <PaymentForm value={paymentMethod} onChange={setPaymentMethod} />
+      <PaymentForm
+        value={paymentMethod}
+        onChange={setPaymentMethod}
+        companyInvoiceEnabled={companyInvoiceEnabled}
+      />
 
       {vendorGroups.length > 1 && (
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
