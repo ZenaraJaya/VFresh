@@ -5,10 +5,10 @@ import {
   sortMenuOpenFirst,
   sortVendorsOpenFirst,
   VENDOR_HOURS_SELECT,
-  VENDOR_PUBLIC_SELECT,
 } from '@/lib/vendor-availability';
 import type { MenuItem, VendorPublic } from '@/types';
 import { withPublicPackQty } from '@/lib/daily-pack';
+import { storefrontWhere, VENDOR_PUBLIC_SELECT } from '@/lib/public-menu';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,8 +23,7 @@ export default async function SearchPage({
   const [foods, vendors] = q
     ? await Promise.all([
         prisma.menuItem.findMany({
-          where: {
-            available: true,
+          where: await storefrontWhere({
             vendor: { status: 'APPROVED' },
             OR: [
               { name: { contains: q, mode: 'insensitive' } },
@@ -36,7 +35,7 @@ export default async function SearchPage({
                 },
               },
             ],
-          },
+          }),
           include: {
             vendor: {
               select: {

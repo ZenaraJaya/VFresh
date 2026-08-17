@@ -24,6 +24,7 @@ export default function AdminStaffPage() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<AdminRow | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<AdminRow | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
@@ -94,22 +95,34 @@ export default function AdminStaffPage() {
     }
   };
 
-  const remove = async (admin: AdminRow) => {
+  const askRemove = (admin: AdminRow) => {
     if (admin.id === session?.user?.id) {
       toast.error('You cannot delete your own account');
       return;
     }
-    if (!confirm(`Delete admin ${admin.email}?`)) return;
-    const res = await fetch(`/api/admin/admins/${admin.id}`, {
-      method: 'DELETE',
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      toast.error(data.error || 'Delete failed');
-      return;
+    setPendingDelete(admin);
+  };
+
+  const remove = async () => {
+    if (!pendingDelete) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/admins/${pendingDelete.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Delete failed');
+        return;
+      }
+      toast.success('Admin deleted');
+      setPendingDelete(null);
+      load();
+    } catch {
+      toast.error('Delete failed');
+    } finally {
+      setSaving(false);
     }
-    toast.success('Admin deleted');
-    load();
   };
 
   return (
@@ -177,16 +190,16 @@ export default function AdminStaffPage() {
                       <button
                         type="button"
                         onClick={() => openEdit(admin)}
-                        className="rounded-lg p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                        className="rounded-lg p-2 text-neutral-800 transition hover:bg-white hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
                         aria-label="Edit"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
-                        onClick={() => remove(admin)}
+                        onClick={() => askRemove(admin)}
                         disabled={admin.id === session?.user?.id}
-                        className="rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:opacity-30 dark:hover:bg-red-950"
+                        className="rounded-lg p-2 text-red-600 transition hover:bg-white hover:text-red-700 disabled:opacity-30 dark:hover:bg-neutral-800"
                         aria-label="Delete"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -199,6 +212,40 @@ export default function AdminStaffPage() {
           </table>
         </div>
       )}
+
+      {pendingDelete ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center">
+          <div className="w-full max-w-md space-y-3 rounded-2xl bg-white p-5 dark:bg-neutral-900">
+            <h2 className="text-lg font-semibold">Delete admin</h2>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              Remove{' '}
+              <span className="font-medium text-neutral-900 dark:text-white">
+                {pendingDelete.name || pendingDelete.email}
+              </span>{' '}
+              ({pendingDelete.email})? They will no longer be able to sign in.
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => setPendingDelete(null)}
+                className="rounded-xl border border-neutral-200 px-3 py-2 text-sm font-medium text-neutral-800 transition hover:bg-white hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-100 dark:hover:bg-white dark:hover:text-neutral-900"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void remove()}
+                className="inline-flex items-center gap-2 rounded-xl border border-red-300 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-white hover:text-red-700 dark:border-red-500 dark:text-red-400 dark:hover:bg-white dark:hover:text-red-700"
+              >
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
@@ -213,7 +260,7 @@ export default function AdminStaffPage() {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                className="rounded-lg p-1 text-neutral-800 transition hover:bg-white hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -262,7 +309,7 @@ export default function AdminStaffPage() {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-xl px-4 py-2 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                className="rounded-xl px-4 py-2 text-sm text-neutral-800 transition hover:bg-white hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
               >
                 Cancel
               </button>

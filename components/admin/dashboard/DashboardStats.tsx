@@ -97,7 +97,7 @@ export default function DashboardStats() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
-          Dashboard
+          Overview
         </h1>
         <p className="mt-1 text-neutral-500 dark:text-neutral-400">
           {stats.pendingOrders} order{stats.pendingOrders === 1 ? '' : 's'}{' '}
@@ -163,7 +163,7 @@ export default function DashboardStats() {
           <h2 className="font-semibold">Recent orders</h2>
           <Link
             href="/admin/orders"
-            className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+            className="rounded-xl px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-white hover:text-neutral-900 dark:text-emerald-400 dark:hover:bg-neutral-800 dark:hover:text-white"
           >
             View all
           </Link>
@@ -179,7 +179,7 @@ export default function DashboardStats() {
               <li key={order.id}>
                 <Link
                   href={`/admin/orders/${order.id}`}
-                  className="flex items-center justify-between gap-4 px-5 py-3 transition hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                  className="flex items-center justify-between gap-4 px-5 py-3 text-neutral-900 transition hover:bg-white hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-mono text-sm font-medium">

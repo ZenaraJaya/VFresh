@@ -13,6 +13,7 @@ import {
 } from '@/lib/vendor-availability';
 import type { MenuItem } from '@/types';
 import { withPublicPackQty } from '@/lib/daily-pack';
+import { storefrontWhere } from '@/lib/public-menu';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +35,7 @@ export default async function VendorStorePage({
   const hours = formatVendorSchedule(vendor);
 
   const foods = await prisma.menuItem.findMany({
-    where: { vendorId: vendor.id, available: true },
+    where: await storefrontWhere({ vendorId: vendor.id }),
     include: {
       vendor: {
         select: {

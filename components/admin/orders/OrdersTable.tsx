@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatMYR } from '@/lib/pricing';
@@ -24,6 +24,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function OrdersTable() {
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'ALL' | OrderStatus>('ALL');
@@ -89,7 +90,7 @@ export default function OrdersTable() {
             className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
               statusFilter === status
                 ? 'bg-emerald-500 text-white'
-                : 'border border-neutral-200 bg-white hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800'
+                : 'border border-neutral-200 bg-white text-neutral-800 hover:bg-white hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800 dark:hover:text-white'
             }`}
           >
             {status}
@@ -125,15 +126,19 @@ export default function OrdersTable() {
               {orders.map((order) => (
                 <tr
                   key={order.id}
-                  className="transition hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+                  tabIndex={0}
+                  role="link"
+                  onClick={() => router.push(`/admin/orders/${order.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      router.push(`/admin/orders/${order.id}`);
+                    }
+                  }}
+                  className="cursor-pointer text-neutral-900 transition hover:bg-white hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
                 >
                   <td className="px-4 py-3">
-                    <Link
-                      href={`/admin/orders/${order.id}`}
-                      className="font-mono font-medium text-emerald-600 hover:underline dark:text-emerald-400"
-                    >
-                      {order.orderNumber}
-                    </Link>
+                    <p className="font-mono font-medium">{order.orderNumber}</p>
                     <p className="text-xs text-neutral-500">
                       {order.items?.length ?? 0} item
                       {(order.items?.length ?? 0) === 1 ? '' : 's'}
@@ -162,7 +167,7 @@ export default function OrdersTable() {
                   <td className="px-4 py-3 font-semibold">
                     {formatMYR(order.total)}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-2">
                       <span
                         className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${
@@ -177,7 +182,7 @@ export default function OrdersTable() {
                         onChange={(e) =>
                           updateStatus(order.id, e.target.value as OrderStatus)
                         }
-                        className="rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-950"
+                        className="min-h-9 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-950"
                       >
                         {STATUSES.map((s) => (
                           <option key={s} value={s}>

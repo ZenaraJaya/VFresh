@@ -1,17 +1,15 @@
 import SiteShell from '@/components/customer/layout/SiteShell';
 import HeroSection from '@/components/customer/sections/HeroSection';
-import HomeSearch from '@/components/customer/sections/HomeSearch';
-import MenuSection from '@/components/customer/sections/MenuSection';
-import VendorsSection from '@/components/customer/sections/VendorsSection';
+import HomeCatalog from '@/components/customer/sections/HomeCatalog';
 import AboutSection from '@/components/customer/sections/AboutSection';
 import LocationSection from '@/components/customer/sections/LocationSection';
 import ReviewSection from '@/components/customer/sections/ReviewSection';
 import { prisma } from '@/lib/db';
+import { storefrontWhere, VENDOR_PUBLIC_SELECT } from '@/lib/public-menu';
 import {
   isMenuFromOpenVendor,
   sortVendorsOpenFirst,
   VENDOR_HOURS_SELECT,
-  VENDOR_PUBLIC_SELECT,
 } from '@/lib/vendor-availability';
 import { withPublicPackQty } from '@/lib/daily-pack';
 import type { MenuItem, VendorPublic } from '@/types';
@@ -56,7 +54,7 @@ export default async function Home() {
   try {
     const [featuredRaw, vendorsRaw] = await Promise.all([
       prisma.menuItem.findMany({
-        where: { available: true, vendor: { status: 'APPROVED' } },
+        where: await storefrontWhere({ vendor: { status: 'APPROVED' } }),
         include: {
           vendor: {
             select: {
@@ -80,12 +78,8 @@ export default async function Home() {
     const withBadges = (await withPublicPackQty(featuredRaw))
       .map(mapItem)
       .filter(isMenuFromOpenVendor);
-    const bestsellers = withBadges.filter((i) =>
-      i.badges.includes('BESTSELLER')
-    );
-    const rest = withBadges.filter((i) => !i.badges.includes('BESTSELLER'));
-    featured = [...bestsellers, ...rest].slice(0, 6);
-    vendors = sortVendorsOpenFirst(vendorsRaw as VendorPublic[]).slice(0, 6);
+    featured = withBadges;
+    vendors = sortVendorsOpenFirst(vendorsRaw as VendorPublic[]);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('Home page data failed', message);
@@ -95,7 +89,6 @@ export default async function Home() {
   return (
     <SiteShell>
       <HeroSection />
-      <HomeSearch />
       {loadError ? (
         <div className="mx-auto max-w-6xl px-4 py-12">
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-10 text-center dark:border-amber-900 dark:bg-amber-950/40">
@@ -108,10 +101,7 @@ export default async function Home() {
           </div>
         </div>
       ) : (
-        <>
-          <MenuSection items={featured} />
-          <VendorsSection vendors={vendors} />
-        </>
+        <HomeCatalog items={featured} vendors={vendors} />
       )}
       <AboutSection />
       <LocationSection />

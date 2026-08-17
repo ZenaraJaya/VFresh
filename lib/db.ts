@@ -1,4 +1,3 @@
-// lib/db.ts
 import './trust-system-ca';
 import { PrismaClient } from '@prisma/client';
 import { neonConfig } from '@neondatabase/serverless';
@@ -10,8 +9,8 @@ if (process.env.VERCEL) {
   neonConfig.poolQueryViaFetch = true;
 }
 
-/** Bump when Customer/Order fields change so HMR drops a stale Prisma singleton. */
-const PRISMA_CLIENT_REV = 16;
+/** Bump when Prisma models change so HMR drops a stale Prisma singleton. */
+const PRISMA_CLIENT_REV = 21;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -34,13 +33,11 @@ if (!connectionString) {
   throw new Error('DATABASE_URL is not defined');
 }
 
-const adapter = new PrismaNeon({
-  connectionString: neonConnectionString(connectionString),
-  max: process.env.VERCEL ? 1 : 10,
-  idleTimeoutMillis: 30_000,
-});
-
 function makePrisma() {
+  const adapter = new PrismaNeon({
+    connectionString: neonConnectionString(connectionString),
+    max: process.env.VERCEL ? 1 : 10,
+  });
   return new PrismaClient({
     adapter,
     log:
@@ -83,10 +80,34 @@ function orderFieldNames(client: PrismaClient): string[] {
   return model?.fields?.map((field) => field.name) ?? [];
 }
 
+function vendorFieldNames(client: PrismaClient): string[] {
+  const model = (
+    client as unknown as {
+      _runtimeDataModel?: {
+        models?: Record<string, { fields?: Array<{ name: string }> }>;
+      };
+    }
+  )._runtimeDataModel?.models?.Vendor;
+  return model?.fields?.map((field) => field.name) ?? [];
+}
+
+function menuItemFieldNames(client: PrismaClient): string[] {
+  const model = (
+    client as unknown as {
+      _runtimeDataModel?: {
+        models?: Record<string, { fields?: Array<{ name: string }> }>;
+      };
+    }
+  )._runtimeDataModel?.models?.MenuItem;
+  return model?.fields?.map((field) => field.name) ?? [];
+}
+
 function clientLooksCurrent(client: PrismaClient) {
   const fields = customerFieldNames(client);
   const companyFields = companyFieldNames(client);
   const orderFields = orderFieldNames(client);
+  const vendorFields = vendorFieldNames(client);
+  const menuFields = menuItemFieldNames(client);
   return (
     fields.includes('companyId') &&
     fields.includes('billingName') &&
@@ -95,6 +116,8 @@ function clientLooksCurrent(client: PrismaClient) {
     companyFields.includes('status') &&
     orderFields.includes('courierId') &&
     orderFields.includes('pickedUpAt') &&
+    vendorFields.includes('warningCount') &&
+    menuFields.includes('reviewStatus') &&
     typeof client.recurringOrder?.findMany === 'function' &&
     typeof client.companyInvite?.findMany === 'function' &&
     typeof client.courier?.findMany === 'function'
@@ -109,11 +132,11 @@ const reuse =
 
 const prisma = reuse ? cached : makePrisma();
 
-if (cached && cached !== prisma) {
-  void cached.$disconnect();
-}
-
 export { prisma };
+
+export function prismaHasMenuReviewStatus() {
+  return menuItemFieldNames(prisma).includes('reviewStatus');
+}
 
 globalForPrisma.prisma = prisma;
 globalForPrisma.prismaRev = PRISMA_CLIENT_REV;

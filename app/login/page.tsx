@@ -2,7 +2,6 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { homeForRole } from '@/lib/home-for-role';
 import { safeCallbackPath } from '@/lib/safe-callback';
 import LoginForm from './login-form';
 
@@ -19,7 +18,6 @@ export default async function LoginPage({
     if (callback && (role === 'CUSTOMER' || role === 'DELIVERY')) {
       redirect(callback);
     }
-    redirect(homeForRole(role, session.user.vendorStatus));
   }
 
   return (

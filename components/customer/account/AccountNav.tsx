@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import {
   CreditCard,
   FileText,
   ClipboardList,
+  LogOut,
   UserRound,
 } from 'lucide-react';
 
@@ -88,6 +90,15 @@ export default function AccountNav({
           );
         })}
       </nav>
+
+      <button
+        type="button"
+        onClick={() => signOut({ callbackUrl: '/' })}
+        className="mt-4 flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-neutral-200 px-3 py-2.5 text-sm font-medium text-neutral-800 transition hover:bg-white hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 dark:hover:text-white"
+      >
+        <LogOut className="h-4 w-4" />
+        Sign out
+      </button>
     </aside>
   );
 }

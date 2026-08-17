@@ -122,7 +122,7 @@ export default function MenuForm({ item, onSave, onClose }: MenuFormProps) {
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition"
+            className="rounded-full p-2 text-neutral-800 transition hover:bg-white hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>
@@ -150,7 +150,7 @@ export default function MenuForm({ item, onSave, onClose }: MenuFormProps) {
                       setImagePreview('');
                       setFormData({ ...formData, image: '' });
                     }}
-                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                    className="absolute top-1 right-1 rounded-full bg-red-500 p-1 text-white transition hover:bg-white hover:text-red-600"
                   >
                     <XCircle className="w-4 h-4" />
                   </button>
@@ -312,7 +312,7 @@ export default function MenuForm({ item, onSave, onClose }: MenuFormProps) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-neutral-200 dark:border-neutral-700 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
+              className="flex-1 rounded-xl border border-neutral-200 px-4 py-2 text-neutral-800 transition hover:bg-white hover:text-neutral-900 dark:border-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-white"
             >
               Cancel
             </button>

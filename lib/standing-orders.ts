@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { storefrontWhere } from '@/lib/public-menu';
 import { calculateTotals, toMoney } from '@/lib/pricing';
 import { newOrderNumber } from '@/lib/order-number';
 import { miriWeekday, miriYmd, ymdToUtcDate } from '@/lib/miri-date';
@@ -70,7 +71,10 @@ export async function materializeStandingOrders(vendorId?: string) {
     const wanted = rec.items as StandingItem[];
     const ids = wanted.map((i) => i.menuItemId);
     const menuItems = await prisma.menuItem.findMany({
-      where: { id: { in: ids }, vendorId: rec.vendorId, available: true },
+      where: await storefrontWhere({
+        id: { in: ids },
+        vendorId: rec.vendorId,
+      }),
     });
     if (menuItems.length === 0) {
       await prisma.recurringOrder.update({

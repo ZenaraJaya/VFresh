@@ -22,10 +22,14 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="flex flex-1 bg-neutral-50 dark:bg-neutral-950">
+    <div className="flex min-h-screen flex-1 bg-neutral-50 dark:bg-neutral-950">
       <AdminSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <AdminHeader />
+        <AdminHeader
+          name={session.user.name}
+          email={session.user.email}
+          image={session.user.image}
+        />
         <main className="flex-1 overflow-x-hidden p-6">{children}</main>
       </div>
     </div>

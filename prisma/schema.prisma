@@ -72,6 +72,12 @@ model Vendor {
   lunchEnd           String?
   /// CUSTOM mode: { "0"|"1"|...|"6": { open, close } | null } (0=Sun)
   weeklyHours        Json?
+  warningCount       Int          @default(0)
+  lastWarningAt      DateTime?
+  lastWarningReason  String?
+  warningHistory     Json         @default("[]")
+  suspendReason      String?
+  suspendedAt        DateTime?
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
@@ -198,6 +204,8 @@ model MenuItem {
   dailyPackQty Int?
   /// Packs still in the kitchen. Null = no daily limit. Deducted when received.
   remainingQty Int?
+  reviewStatus MenuReviewStatus @default(LIVE)
+  rejectReason String?
   vendorId    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -324,6 +332,11 @@ model Invoice {
   orders  Order[]
 
   @@map("invoices")
+}
+
+enum MenuReviewStatus {
+  LIVE
+  REJECTED
 }
 
 enum OrderStatus {

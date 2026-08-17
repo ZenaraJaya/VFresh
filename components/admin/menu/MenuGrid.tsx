@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { Edit, Trash2 } from 'lucide-react';
 import Badge from '@/components/shared/ui/Badge';
 
@@ -13,6 +14,8 @@ interface MenuItem {
   image: string;
   badges: string[];
   available: boolean;
+  reviewStatus?: 'LIVE' | 'REJECTED';
+  vendor?: { id: string; businessName: string } | null;
 }
 
 interface MenuGridProps {
@@ -56,13 +59,13 @@ export default function MenuGrid({ items, onEdit, onDelete }: MenuGridProps) {
             <div className="absolute top-2 right-2 flex gap-1">
               <button
                 onClick={() => onEdit(item)}
-                className="p-2 bg-white dark:bg-neutral-800 rounded-lg hover:bg-emerald-500 hover:text-white transition"
+                className="p-2 rounded-lg bg-white text-neutral-800 transition hover:bg-white hover:text-neutral-900 dark:bg-neutral-800 dark:text-neutral-200"
               >
                 <Edit className="w-4 h-4" />
               </button>
               <button
                 onClick={() => onDelete(item.id)}
-                className="p-2 bg-white dark:bg-neutral-800 rounded-lg hover:bg-red-500 hover:text-white transition"
+                className="rounded-lg bg-white p-2 text-red-600 transition hover:bg-white hover:text-red-700 dark:bg-neutral-800"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -87,6 +90,17 @@ export default function MenuGrid({ items, onEdit, onDelete }: MenuGridProps) {
             <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3 line-clamp-2">
               {item.description}
             </p>
+            {item.vendor ? (
+              <Link
+                href={`/admin/vendors/${item.vendor.id}`}
+                className="mb-3 flex min-h-11 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-sm font-medium text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200"
+              >
+                {item.vendor.businessName} — review vendor
+              </Link>
+            ) : null}
+            {item.reviewStatus === 'REJECTED' ? (
+              <p className="mb-3 text-xs font-medium text-red-700">Rejected</p>
+            ) : null}
 
             <div className="flex flex-wrap gap-1">
               {item.badges.slice(0, 3).map((badge) => (

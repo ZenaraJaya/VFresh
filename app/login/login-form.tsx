@@ -58,7 +58,7 @@ export default function LoginForm() {
         return;
       }
       if (hint.status === 'suspended') {
-        setNotice('This vendor account is suspended. Please contact support.');
+        setNotice('This vendor account is suspended. Email VFresh admin to appeal — you cannot register again.');
         return;
       }
       if (hint.status === 'unknown') {
@@ -115,8 +115,9 @@ export default function LoginForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-md space-y-5 rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
+      className="w-full max-w-md space-y-5 rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 md:max-w-3xl"
     >
+      <div className="mx-auto w-full max-w-md space-y-5">
       <div className="space-y-1 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500 text-white">
           <Leaf className="h-6 w-6" />
@@ -217,16 +218,20 @@ export default function LoginForm() {
           </p>
         ) : null}
       </div>
+      </div>
 
-      <div className="space-y-2 pt-1">
+      <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
         <Link
           href={`/register${searchParams.get('callbackUrl') ? `?callbackUrl=${encodeURIComponent(searchParams.get('callbackUrl')!)}` : ''}`}
-          className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-3 text-left transition hover:border-emerald-300 dark:border-emerald-900 dark:bg-emerald-950/40"
+          className="flex h-full flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-left transition hover:border-emerald-300 dark:border-emerald-900 dark:bg-emerald-950/40"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
-            <ShoppingBag className="h-5 w-5" />
+          <span className="flex items-start justify-between gap-2">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
+              <ShoppingBag className="h-5 w-5" />
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-emerald-600" />
           </span>
-          <span className="min-w-0 flex-1">
+          <span className="min-w-0">
             <span className="block text-sm font-semibold text-emerald-800 dark:text-emerald-200">
               New here? Create an account
             </span>
@@ -235,16 +240,18 @@ export default function LoginForm() {
               admin reviews it before you can order.
             </span>
           </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-emerald-600" />
         </Link>
         <Link
           href="/vendor/signup"
-          className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-3 text-left transition hover:border-amber-300 dark:border-amber-900 dark:bg-amber-950/40"
+          className="flex h-full flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-left transition hover:border-amber-300 dark:border-amber-900 dark:bg-amber-950/40"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-white">
-            <Store className="h-5 w-5" />
+          <span className="flex items-start justify-between gap-2">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-white">
+              <Store className="h-5 w-5" />
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-amber-700" />
           </span>
-          <span className="min-w-0 flex-1">
+          <span className="min-w-0">
             <span className="block text-sm font-semibold text-amber-900 dark:text-amber-200">
               Sell on VFresh
             </span>
@@ -253,16 +260,18 @@ export default function LoginForm() {
               48 hours (working hours).
             </span>
           </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-amber-700" />
         </Link>
         <Link
           href="/delivery/register"
-          className="flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50/70 px-3 py-3 text-left transition hover:border-sky-300 dark:border-sky-900 dark:bg-sky-950/40"
+          className="flex h-full flex-col gap-3 rounded-xl border border-sky-200 bg-sky-50/70 p-3 text-left transition hover:border-sky-300 dark:border-sky-900 dark:bg-sky-950/40"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-600 text-white">
-            <Bike className="h-5 w-5" />
+          <span className="flex items-start justify-between gap-2">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-600 text-white">
+              <Bike className="h-5 w-5" />
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-sky-700" />
           </span>
-          <span className="min-w-0 flex-1">
+          <span className="min-w-0">
             <span className="block text-sm font-semibold text-sky-800 dark:text-sky-200">
               Deliver with VFresh
             </span>
@@ -271,7 +280,6 @@ export default function LoginForm() {
               name.
             </span>
           </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-sky-700" />
         </Link>
       </div>
     </form>

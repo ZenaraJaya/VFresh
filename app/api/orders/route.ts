@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
+import { storefrontWhere } from '@/lib/public-menu';
 import { authOptions } from '@/lib/auth';
 import { calculateTotals, toMoney } from '@/lib/pricing';
 import { isVendorAcceptingOrders, isVendorOnLunchBreak } from '@/lib/vendor-availability';
@@ -109,10 +110,9 @@ export async function POST(req: NextRequest) {
     }
 
     const menuItems = await prisma.menuItem.findMany({
-      where: {
+      where: await storefrontWhere({
         id: { in: data.items.map((i) => i.menuItemId) },
-        available: true,
-      },
+      }),
       include: { vendor: true },
     });
 

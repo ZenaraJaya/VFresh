@@ -8,6 +8,7 @@ import { prisma } from '@/lib/db';
 import { formatMYR } from '@/lib/pricing';
 import { VENDOR_HOURS_SELECT } from '@/lib/vendor-availability';
 import { withPublicPackQty } from '@/lib/daily-pack';
+import { isMenuRejected, storefrontWhere } from '@/lib/public-menu';
 import type { MenuItem } from '@/types';
 
 export const dynamic = 'force-dynamic';
@@ -33,12 +34,15 @@ export default async function MenuItemPage({
       },
     },
   });
-  if (!item) notFound();
+  if (!item || !item.available || (await isMenuRejected(id))) notFound();
 
   const [publicItem] = await withPublicPackQty([item]);
 
   const related = await prisma.menuItem.findMany({
-    where: { category: item.category, available: true, id: { not: item.id } },
+    where: await storefrontWhere({
+      category: item.category,
+      id: { not: item.id },
+    }),
     include: {
       vendor: {
         select: {

@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import { ArrowRight, Clock, Salad, Truck } from 'lucide-react';
+import HomeHashLink from '@/components/customer/layout/HomeHashLink';
 
 export default function HeroSection() {
   return (
-    <section className="vf-gradient">
+    <section id="home" className="vf-gradient">
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-20 lg:grid-cols-2 lg:py-28">
         <div className="space-y-6">
           <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
@@ -25,19 +25,19 @@ export default function HeroSection() {
           </p>
 
           <div className="flex flex-wrap gap-3">
-            <Link
-              href="/menu"
+            <HomeHashLink
+              hash="menu"
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 font-medium text-white transition hover:bg-emerald-600"
             >
               Browse the menu
               <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/#about"
-              className="inline-flex items-center rounded-xl border border-neutral-300 px-6 py-3 font-medium transition hover:bg-white dark:border-neutral-700 dark:hover:bg-neutral-800"
+            </HomeHashLink>
+            <HomeHashLink
+              hash="about"
+              className="inline-flex items-center rounded-xl border border-neutral-300 px-6 py-3 font-medium text-neutral-800 transition hover:bg-white hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 dark:hover:text-white"
             >
               About us
-            </Link>
+            </HomeHashLink>
           </div>
 
           <dl className="grid grid-cols-3 gap-4 pt-4">

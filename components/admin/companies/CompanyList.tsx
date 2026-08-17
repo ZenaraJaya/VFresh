@@ -1,16 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Building2, Loader2, Plus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Company } from '@/types';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
 import PhoneInput from '@/components/shared/ui/PhoneInput';
-import { companyStatusLabel } from '@/lib/company';
 
 type CompanyRow = Company & {
   _count?: { orders: number; customers: number; invites: number };
-  orders?: { createdAt: string; orderNumber: string }[];
 };
 
 const EMPTY_FORM = {
@@ -20,109 +19,23 @@ const EMPTY_FORM = {
   phone: '',
 };
 
-function statusClass(status?: string, isActive?: boolean) {
-  if (status === 'PENDING') {
-    return 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300';
-  }
-  if (status === 'REJECTED' || isActive === false) {
-    return 'bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300';
-  }
-  return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400';
+function whoLabel(company: CompanyRow) {
+  const registrant = company.registeredBy;
+  if (!registrant) return 'Opened by admin';
+  return `Registered by ${registrant.name || registrant.email}${
+    registrant.jobTitle ? ` · ${registrant.jobTitle}` : ''
+  }`;
 }
 
-function CompanyCard({
-  company,
-  busyId,
-  onReview,
-  onActive,
-}: {
-  company: CompanyRow;
-  busyId: string | null;
-  onReview: (id: string, status: 'APPROVED' | 'REJECTED') => void;
-  onActive: (id: string, isActive: boolean) => void;
-}) {
-  const lastOrder = company.orders?.[0];
-  const registrant = company.registeredBy;
-  const busy = busyId === company.id;
-
+function CompanyCard({ company }: { company: CompanyRow }) {
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <h2 className="font-semibold leading-tight">{company.name}</h2>
-        <span
-          className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass(company.status, company.isActive)}`}
-        >
-          {company.status === 'APPROVED' && !company.isActive
-            ? 'Inactive'
-            : companyStatusLabel(company.status ?? 'APPROVED')}
-        </span>
-      </div>
-
-      <dl className="space-y-1 text-sm text-neutral-600 dark:text-neutral-400">
-        <div>{company.billingEmail}</div>
-        {company.phone ? <div>{company.phone}</div> : null}
-        {registrant ? (
-          <div className="text-xs">
-            Registered by {registrant.name || registrant.email}
-            {registrant.jobTitle ? ` · ${registrant.jobTitle}` : ''}
-          </div>
-        ) : (
-          <div className="text-xs">Opened by admin</div>
-        )}
-        {company.createdAt ? (
-          <div className="text-xs">
-            {new Date(company.createdAt).toLocaleDateString()}
-          </div>
-        ) : null}
-      </dl>
-
-      <p className="mt-4 border-t border-neutral-200 pt-3 text-sm dark:border-neutral-800">
-        <span className="font-semibold">{company._count?.customers ?? 0}</span>
-        <span className="text-neutral-500"> staff · </span>
-        <span className="font-semibold">{company._count?.orders ?? 0}</span>
-        <span className="text-neutral-500"> orders</span>
-        {lastOrder ? (
-          <span className="block text-xs text-neutral-500">
-            Last order {lastOrder.orderNumber}
-          </span>
-        ) : (
-          <span className="block text-xs text-neutral-500">No orders yet</span>
-        )}
-      </p>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {company.status !== 'APPROVED' ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onReview(company.id, 'APPROVED')}
-            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-          >
-            Approve
-          </button>
-        ) : null}
-        {company.status === 'PENDING' ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onReview(company.id, 'REJECTED')}
-            className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60 dark:border-red-900 dark:text-red-400"
-          >
-            Reject
-          </button>
-        ) : null}
-        {company.status === 'APPROVED' ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onActive(company.id, !company.isActive)}
-            className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold hover:bg-neutral-50 disabled:opacity-60 dark:border-neutral-700"
-          >
-            {company.isActive ? 'Deactivate' : 'Reactivate'}
-          </button>
-        ) : null}
-      </div>
-    </div>
+    <Link
+      href={`/admin/companies/${company.id}`}
+      className="rounded-2xl border border-neutral-200 bg-white p-5 transition hover:border-emerald-300 hover:bg-white dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-emerald-800 dark:hover:bg-neutral-800"
+    >
+      <h2 className="font-semibold leading-tight">{company.name}</h2>
+      <p className="mt-2 text-sm text-neutral-500">{whoLabel(company)}</p>
+    </Link>
   );
 }
 
@@ -132,7 +45,6 @@ export default function CompanyList() {
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
-  const [busyId, setBusyId] = useState<string | null>(null);
 
   const fetchCompanies = async () => {
     try {
@@ -179,44 +91,6 @@ export default function CompanyList() {
     }
   };
 
-  const onReview = async (id: string, status: 'APPROVED' | 'REJECTED') => {
-    setBusyId(id);
-    try {
-      const res = await fetch(`/api/admin/companies/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || 'Update failed');
-      toast.success(status === 'APPROVED' ? 'Company approved' : 'Company rejected');
-      void fetchCompanies();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Update failed');
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const onActive = async (id: string, isActive: boolean) => {
-    setBusyId(id);
-    try {
-      const res = await fetch(`/api/admin/companies/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || 'Update failed');
-      toast.success(isActive ? 'Company reactivated' : 'Company deactivated');
-      void fetchCompanies();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Update failed');
-    } finally {
-      setBusyId(null);
-    }
-  };
-
   const pending = companies.filter((c) => c.status === 'PENDING');
   const rest = companies.filter((c) => c.status !== 'PENDING');
 
@@ -231,7 +105,7 @@ export default function CompanyList() {
             Companies
           </h1>
           <p className="mt-1 text-neutral-500 dark:text-neutral-400">
-            Review customer registrations, staff, and order activity
+            Open a company to see details. Billing is under the Billing tab.
           </p>
         </div>
         <button
@@ -263,13 +137,7 @@ export default function CompanyList() {
               </h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {pending.map((company) => (
-                  <CompanyCard
-                    key={company.id}
-                    company={company}
-                    busyId={busyId}
-                    onReview={onReview}
-                    onActive={onActive}
-                  />
+                  <CompanyCard key={company.id} company={company} />
                 ))}
               </div>
             </section>
@@ -281,13 +149,7 @@ export default function CompanyList() {
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {rest.map((company) => (
-                <CompanyCard
-                  key={company.id}
-                  company={company}
-                  busyId={busyId}
-                  onReview={onReview}
-                  onActive={onActive}
-                />
+                <CompanyCard key={company.id} company={company} />
               ))}
             </div>
           </section>
@@ -306,7 +168,7 @@ export default function CompanyList() {
                 type="button"
                 onClick={() => setFormOpen(false)}
                 aria-label="Close"
-                className="rounded-lg p-1.5 transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                className="rounded-lg p-1.5 text-neutral-800 transition hover:bg-white hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
               >
                 <X className="h-5 w-5" />
               </button>

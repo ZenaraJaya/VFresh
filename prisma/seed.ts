@@ -5,7 +5,6 @@
 // rejects unless the whole project opts into allowImportingTsExtensions.
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
-import DEMO_ACCOUNTS from '../lib/demo-accounts.json' with { type: 'json' };
 import { neonConfig } from '@neondatabase/serverless';
 import { PrismaNeon } from '@prisma/adapter-neon';
 import ws from 'ws';
@@ -20,6 +19,25 @@ if (!connectionString) {
 const prisma = new PrismaClient({
   adapter: new PrismaNeon({ connectionString }),
 });
+
+const DEMO_ACCOUNTS = {
+  customer: {
+    email: 'customer@vfresh.my',
+    password: 'VFreshAdmin123!',
+  },
+  vendor: {
+    email: 'vendor@vfresh.my',
+    password: 'VFreshVendor123!',
+  },
+  admin: {
+    email: 'admin@vfresh.my',
+    password: 'VFreshAdmin123!',
+  },
+  delivery: {
+    email: 'courier@vfresh.my',
+    password: 'VFreshCourier123!',
+  },
+};
 
 const MENU_ITEMS = [
   {

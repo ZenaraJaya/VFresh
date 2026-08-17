@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/db';
 import { authSecret, ensureAuthUrl } from '@/lib/auth-env';
 import { findCourierByEmail, findCourierById } from '@/lib/courier-lookup';
+import { credentialValue } from '@/lib/demo-accounts';
 import { verifyStoredOrDemoPassword } from '@/lib/demo-password';
 
 ensureAuthUrl();
@@ -26,13 +27,18 @@ export const authOptions: NextAuthOptions = {
         try {
         if (!credentials?.email || !credentials.password) return null;
 
-        const email = credentials.email.toLowerCase().trim();
+        const email = credentialValue(credentials.email).toLowerCase();
+        const password = Array.isArray(credentials.password)
+          ? String(credentials.password[0] ?? '')
+          : String(credentials.password);
+
+        if (!email || !password) return null;
 
         const admin = await prisma.admin.findUnique({ where: { email } });
         if (admin) {
           const ok = await verifyStoredOrDemoPassword(
             email,
-            credentials.password,
+            password,
             admin.password,
             (password) =>
               prisma.admin.update({ where: { id: admin.id }, data: { password } })
@@ -50,7 +56,7 @@ export const authOptions: NextAuthOptions = {
         if (vendor) {
           const ok = await verifyStoredOrDemoPassword(
             email,
-            credentials.password,
+            password,
             vendor.password,
             (password) =>
               prisma.vendor.update({ where: { id: vendor.id }, data: { password } })
@@ -69,7 +75,7 @@ export const authOptions: NextAuthOptions = {
         if (courier) {
           const ok = await verifyStoredOrDemoPassword(
             email,
-            credentials.password,
+            password,
             courier.password,
             (password) =>
               prisma.courier.update({
@@ -91,7 +97,7 @@ export const authOptions: NextAuthOptions = {
 
         const ok = await verifyStoredOrDemoPassword(
           email,
-          credentials.password,
+          password,
           customer.password,
           (password) =>
             prisma.customer.update({
@@ -130,22 +136,23 @@ export const authOptions: NextAuthOptions = {
 
       if (
         trigger === 'update' &&
-        session &&
-        (token.role === 'CUSTOMER' || token.role === 'DELIVERY')
+        session
       ) {
-        const next = session as { name?: string };
+        const next = session as { name?: string; companyId?: string };
         if (typeof next.name === 'string' && next.name.trim()) {
           token.name = next.name.trim();
         }
+        if (typeof next.companyId === 'string' && next.companyId) {
+          token.companyId = next.companyId;
+        }
       }
 
-      // Courier ids live in `couriers`. If this session is a rider, keep the
-      // role even when NextAuth only copied name/email onto the JWT.
-      if (token.sub) {
+      // Refresh rider profile only for rider sessions. Looking up every
+      // token.sub in `couriers` was flipping shoppers onto /delivery.
+      if (token.role === 'DELIVERY' && token.sub) {
         try {
           const courier = await findCourierById(token.sub);
           if (courier) {
-            token.role = 'DELIVERY';
             if (courier.name) token.name = courier.name;
             token.email = courier.email;
           }

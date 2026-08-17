@@ -13,7 +13,10 @@ export async function GET() {
     }
 
     const menuItems = await prisma.menuItem.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: {
+        vendor: { select: { id: true, businessName: true, slug: true, email: true } },
+      },
     });
 
     return NextResponse.json(menuItems);

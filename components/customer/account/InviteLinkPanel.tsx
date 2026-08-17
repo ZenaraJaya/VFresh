@@ -87,11 +87,11 @@ export default function InviteLinkPanel({
         <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
         <div>
           <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-            Staff cover link
+            Staff link
           </p>
           <p className="text-xs text-neutral-600 dark:text-neutral-400">
-            Share this with a teammate so they can place orders and pay for{' '}
-            {companyName} while you are on leave.
+            Share this with a teammate so they can join {companyName} and
+            place orders.
           </p>
         </div>
       </div>
@@ -135,7 +135,7 @@ export default function InviteLinkPanel({
             type="button"
             disabled={busy}
             onClick={() => void revoke()}
-            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60 dark:text-red-400 dark:hover:bg-red-950/40"
+            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-white hover:text-red-800 disabled:opacity-60 dark:text-red-400"
           >
             Revoke
           </button>

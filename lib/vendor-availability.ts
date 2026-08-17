@@ -34,18 +34,6 @@ export const VENDOR_HOURS_SELECT = {
   weeklyHours: true,
 } as const;
 
-export const VENDOR_PUBLIC_SELECT = {
-  id: true,
-  businessName: true,
-  slug: true,
-  description: true,
-  logo: true,
-  phone: true,
-  address: true,
-  ...VENDOR_HOURS_SELECT,
-  _count: { select: { menuItems: { where: { available: true } } } },
-} as const;
-
 function asDate(value?: Date | string | null) {
   if (!value) return null;
   const d = value instanceof Date ? value : new Date(value);

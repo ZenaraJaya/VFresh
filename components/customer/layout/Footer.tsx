@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Clock, Leaf, Mail, MapPin } from 'lucide-react';
+import HomeHashLink from './HomeHashLink';
 
 export default function Footer() {
   return (
@@ -24,9 +25,9 @@ export default function Footer() {
           </h3>
           <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
             <li>
-              <Link href="/menu" className="hover:text-emerald-600">
-                Full menu
-              </Link>
+              <HomeHashLink hash="menu" className="hover:text-emerald-600">
+                Menu
+              </HomeHashLink>
             </li>
             <li>
               <Link href="/cart" className="hover:text-emerald-600">
@@ -52,14 +53,19 @@ export default function Footer() {
           </h3>
           <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
             <li>
-              <Link href="/#about" className="hover:text-emerald-600">
+              <HomeHashLink hash="about" className="hover:text-emerald-600">
                 About us
-              </Link>
+              </HomeHashLink>
             </li>
             <li>
-              <Link href="/vendors" className="hover:text-emerald-600">
+              <HomeHashLink hash="location" className="hover:text-emerald-600">
+                Locations
+              </HomeHashLink>
+            </li>
+            <li>
+              <HomeHashLink hash="vendors" className="hover:text-emerald-600">
                 Vendors
-              </Link>
+              </HomeHashLink>
             </li>
             <li>
               <Link href="/login" className="hover:text-emerald-600">

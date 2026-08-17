@@ -16,6 +16,8 @@ export interface MenuItem {
   image: string;
   badges: string[];
   available: boolean;
+  reviewStatus?: 'LIVE' | 'REJECTED';
+  vendor?: { id: string; businessName: string } | null;
 }
 
 export default function MenuManager() {
@@ -35,9 +37,13 @@ export default function MenuManager() {
       const res = await fetch('/api/admin/menu');
       if (!res.ok) throw new Error('Request failed');
       const data = await res.json();
-      // A failed request can still parse as JSON (an error object) — only
-      // arrays are safe to render as a list.
-      setMenuItems(Array.isArray(data) ? data : []);
+      const rows = Array.isArray(data) ? data : [];
+      setMenuItems(
+        rows.map((item: MenuItem & { badges?: unknown }) => ({
+          ...item,
+          badges: Array.isArray(item.badges) ? item.badges : [],
+        }))
+      );
     } catch (error) {
       toast.error('Failed to load menu items');
     } finally {
@@ -121,10 +127,11 @@ export default function MenuManager() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
-            Menu Management
+            Menu review
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-            Add, edit, and manage your menu items
+          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+            Open a vendor to reject inappropriate dishes with a reason. Catalog
+            edits stay here.
           </p>
         </div>
         <button

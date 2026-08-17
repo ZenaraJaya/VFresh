@@ -5,6 +5,7 @@ import { slugify } from '@/lib/slug';
 import { generateTempPassword } from '@/lib/password';
 import { normalizeMyPhone } from '@/lib/phone';
 import { emailAlreadyUsed } from '@/lib/email-taken';
+import { adminAppealEmail } from '@/lib/admin-contact';
 import type { PremisesType } from '@prisma/client';
 
 const PREMISES: PremisesType[] = ['HOMEBASED', 'OTHER'];
@@ -39,6 +40,35 @@ export async function POST(req: Request) {
         { error: 'Select premises type: homebased or other.' },
         { status: 400 }
       );
+    }
+
+    const existingVendor = await prisma.vendor.findUnique({
+      where: { email },
+      select: { status: true, registrationNumber: true },
+    });
+    if (existingVendor?.status === 'SUSPENDED') {
+      return NextResponse.json(
+        {
+          error: `This kitchen is suspended and cannot register again. Email ${adminAppealEmail()} to appeal.`,
+        },
+        { status: 403 }
+      );
+    }
+
+    const regNo = registrationNumber?.trim();
+    if (regNo) {
+      const sameReg = await prisma.vendor.findFirst({
+        where: { registrationNumber: regNo, status: 'SUSPENDED' },
+        select: { id: true },
+      });
+      if (sameReg) {
+        return NextResponse.json(
+          {
+            error: `This kitchen is suspended and cannot register again. Email ${adminAppealEmail()} to appeal.`,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     if (await emailAlreadyUsed(email)) {

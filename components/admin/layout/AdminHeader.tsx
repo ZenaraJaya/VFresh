@@ -1,40 +1,45 @@
-'use client';
-
 import Link from 'next/link';
-import { signOut, useSession } from 'next-auth/react';
-import { ExternalLink, LogOut } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
+import ProfileAvatar from '@/components/shared/ui/ProfileAvatar';
 
-export default function AdminHeader() {
-  const { data: session } = useSession();
-
+export default function AdminHeader({
+  name,
+  email,
+  image,
+}: {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+}) {
   return (
-    <header className="flex h-16 items-center justify-between border-b border-neutral-200 bg-white px-5 dark:border-neutral-800 dark:bg-neutral-900">
-      <Link
-        href="/"
-        className="flex items-center gap-1.5 text-sm text-neutral-600 hover:text-emerald-600 dark:text-neutral-400"
-      >
-        View storefront
-        <ExternalLink className="h-3.5 w-3.5" />
-      </Link>
-
-      <div className="flex items-center gap-4">
-        {session?.user && (
-          <div className="text-right">
-            <p className="text-sm font-medium leading-tight">
-              {session.user.name}
-            </p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              {session.user.email}
-            </p>
-          </div>
-        )}
-        <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          className="flex items-center gap-2 rounded-xl border border-neutral-200 px-3 py-2 text-sm font-medium transition hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-neutral-200 bg-white px-5 dark:border-neutral-800 dark:bg-neutral-900">
+      <p className="hidden text-sm text-neutral-500 sm:block dark:text-neutral-400">
+        Vendor review, company billing, and storefront quality
+      </p>
+      <div className="ml-auto flex items-center gap-2">
+        <Link
+          href="/"
+          className="flex min-h-11 items-center gap-1.5 rounded-xl border border-neutral-200 px-3 py-2 text-sm font-medium text-neutral-800 transition hover:bg-white hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 dark:hover:text-white"
         >
-          <LogOut className="h-4 w-4" />
-          Sign out
-        </button>
+          Storefront
+          <ExternalLink className="h-3.5 w-3.5" />
+        </Link>
+        {email ? (
+          <Link
+            href="/admin/profile"
+            className="flex min-h-11 items-center gap-2 rounded-xl border border-neutral-200 px-2.5 py-1.5 text-neutral-800 transition hover:bg-white hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800 dark:hover:text-white"
+          >
+            <ProfileAvatar src={image} name={name} size={32} />
+            <span className="hidden text-left sm:block">
+              <span className="block text-sm font-medium leading-tight">
+                {name || 'Admin'}
+              </span>
+              <span className="block text-xs text-neutral-500 dark:text-neutral-400">
+                {email}
+              </span>
+            </span>
+          </Link>
+        ) : null}
       </div>
     </header>
   );

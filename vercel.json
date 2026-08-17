@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/standing-orders",
       "schedule": "5 22 * * *"
+    },
+    {
+      "path": "/api/cron/invoices",
+      "schedule": "5 16 * * *"
     }
   ]
 }

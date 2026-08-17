@@ -1,11 +1,12 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Leaf, Menu as MenuIcon, ShoppingBag, X } from 'lucide-react';
 import HeaderAuth, { HeaderAuthMobile } from './HeaderAuth';
 import Navigation from './Navigation';
+import ScrollToHash from './ScrollToHash';
+import HomeHashLink from './HomeHashLink';
 import CartSidebar from '@/components/customer/cart/CartSidebar';
 import { useCart } from '@/context/CartContext';
 
@@ -42,19 +43,25 @@ export default function Header() {
 
   return (
     <>
+      <ScrollToHash />
       <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/85 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/85">
         <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2" onClick={closeMenu}>
+          <HomeHashLink
+            hash="home"
+            onNavigate={closeMenu}
+            className="flex items-center gap-2"
+          >
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 text-white">
               <Leaf className="h-5 w-5" />
             </span>
             <span className="text-lg font-bold tracking-tight">VFresh</span>
-          </Link>
+          </HomeHashLink>
 
           <Navigation />
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => {
                 closeMenu();
                 setCartOpen(true);
@@ -72,12 +79,12 @@ export default function Header() {
 
             <HeaderAuth />
 
-            <Link
-              href="/menu"
+            <HomeHashLink
+              hash="menu"
               className="hidden rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-600 lg:block"
             >
               Order now
-            </Link>
+            </HomeHashLink>
 
             <button
               type="button"
@@ -94,7 +101,7 @@ export default function Header() {
             </button>
           </div>
 
-          {mobileOpen && (
+          {mobileOpen ? (
             <div className="lg:hidden">
               <button
                 type="button"
@@ -109,7 +116,7 @@ export default function Header() {
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
         </div>
       </header>
 

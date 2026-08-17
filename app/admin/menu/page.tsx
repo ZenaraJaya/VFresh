@@ -1,7 +1,7 @@
-import MenuManager from '@/components/admin/menu/MenuManager';
+import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth-guard';
 
-export default async function AdminMenuPage() {
+export default async function AdminMenuRedirect() {
   await requireAdmin();
-  return <MenuManager />;
+  redirect('/admin/vendors/menu');
 }

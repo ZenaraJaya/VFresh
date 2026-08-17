@@ -1,5 +1,5 @@
 import { MapPin } from 'lucide-react';
-import Link from 'next/link';
+import HomeHashLink from '@/components/customer/layout/HomeHashLink';
 
 export default function LocationSection() {
   return (
@@ -25,12 +25,12 @@ export default function LocationSection() {
             We deliver around Miri. Exact reach depends on the vendor you order
             from — open their page for address and hours.
           </p>
-          <Link
-            href="/vendors"
+          <HomeHashLink
+            hash="vendors"
             className="mt-5 inline-flex text-sm font-medium text-emerald-600 hover:text-emerald-700"
           >
             See vendor locations
-          </Link>
+          </HomeHashLink>
         </div>
       </div>
     </section>

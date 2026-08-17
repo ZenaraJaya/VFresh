@@ -1,8 +1,6 @@
 import { prisma } from '@/lib/db';
-import {
-  sortVendorsOpenFirst,
-  VENDOR_PUBLIC_SELECT,
-} from '@/lib/vendor-availability';
+import { sortVendorsOpenFirst } from '@/lib/vendor-availability';
+import { VENDOR_PUBLIC_SELECT } from '@/lib/public-menu';
 import VendorCard from '@/components/customer/vendors/VendorCard';
 import type { VendorPublic } from '@/types';
 

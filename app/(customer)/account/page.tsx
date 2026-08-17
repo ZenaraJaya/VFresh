@@ -59,7 +59,7 @@ export default async function AccountProfilePage() {
 
         <SectionCard
           title="Company"
-          description="Register your workplace from this profile. Staff can cover orders and payments when you are away."
+          description="Register your workplace from this profile. Create a staff link so teammates can join."
         >
           {!me?.company ? (
             <RegisterCompanyForm defaultJobTitle={me?.jobTitle ?? ''} />
@@ -87,8 +87,8 @@ export default async function AccountProfilePage() {
               </p>
               {me.company.status === 'PENDING' ? (
                 <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-                  Waiting for admin review. You can share a staff cover link
-                  after the company is approved.
+                  Waiting for admin review. You can create a staff link after
+                  the company is approved.
                 </p>
               ) : null}
               {me.company.status === 'REJECTED' ? (
@@ -123,8 +123,7 @@ export default async function AccountProfilePage() {
                 <InviteLinkPanel companyName={me.company.name} />
               ) : isOwner ? null : (
                 <p className="mt-4 text-xs text-neutral-500">
-                  Ask {first?.name || 'your HR or manager'} for a staff link
-                  if a teammate needs cover.
+                  Ask {first?.name || 'your HR or manager'} for a staff link.
                 </p>
               )}
             </>

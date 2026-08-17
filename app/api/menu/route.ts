@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { VENDOR_HOURS_SELECT } from '@/lib/vendor-availability';
 import { withPublicPackQty } from '@/lib/daily-pack';
+import { storefrontWhere } from '@/lib/public-menu';
 
 // GET - Public menu. Only available items, optionally filtered by category.
 export async function GET(req: NextRequest) {
@@ -9,11 +10,10 @@ export async function GET(req: NextRequest) {
     const category = req.nextUrl.searchParams.get('category');
 
     const menuItems = await prisma.menuItem.findMany({
-      where: {
-        available: true,
+      where: await storefrontWhere({
         vendor: { status: 'APPROVED' },
-        ...(category && category !== 'ALL' ? { category } : {})
-      },
+        ...(category && category !== 'ALL' ? { category } : {}),
+      }),
       include: {
         vendor: {
           select: {

@@ -19,6 +19,51 @@ async function requireAdminSession() {
   return session;
 }
 
+export async function GET(_req: Request, { params }: RouteContext) {
+  if (!(await requireAdminSession())) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const company = await prisma.company.findUnique({
+    where: { id },
+    include: {
+      registeredBy: {
+        select: { id: true, name: true, email: true, jobTitle: true },
+      },
+      customers: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          jobTitle: true,
+          companyRole: true,
+        },
+        orderBy: { createdAt: 'asc' },
+      },
+      orders: {
+        take: 12,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          total: true,
+          createdAt: true,
+          employeeName: true,
+        },
+      },
+      _count: { select: { customers: true, orders: true } },
+    },
+  });
+
+  if (!company) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  return NextResponse.json(company);
+}
+
 export async function PATCH(req: Request, { params }: RouteContext) {
   if (!(await requireAdminSession())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
