@@ -29,7 +29,7 @@ export default async function AccountInvoiceDetailPage({
   if (!companyId) notFound();
 
   const invoice = await prisma.invoice.findFirst({
-    where: { id, companyId },
+    where: { id, companyId, status: { in: ['SENT', 'PAID', 'OVERDUE'] } },
     include: {
       company: { select: { name: true } },
       orders: {

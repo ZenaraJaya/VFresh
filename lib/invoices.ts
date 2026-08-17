@@ -386,22 +386,6 @@ export async function setInvoiceOrder(
   return loadAdminInvoice(invoiceId);
 }
 
-export async function updateInvoiceMeta(
-  id: string,
-  data: {
-    dueDate?: Date;
-    periodStart?: Date;
-    periodEnd?: Date;
-    status?: 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED';
-  }
-) {
-  await prisma.invoice.update({
-    where: { id },
-    data,
-  });
-  return loadAdminInvoice(id);
-}
-
 function addCalendarDay(ymd: string, days: number) {
   const [year, month, day] = ymd.slice(0, 10).split('-').map(Number);
   const next = new Date(Date.UTC(year, month - 1, day + days));

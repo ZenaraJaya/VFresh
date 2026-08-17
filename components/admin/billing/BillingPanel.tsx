@@ -5,6 +5,14 @@ import { formatMYR, toMoney } from '@/lib/pricing';
 import { malaysiaMonthBounds } from '@/lib/invoices';
 import InvoiceRowActions from '@/components/admin/billing/InvoiceRowActions';
 
+const statusTone: Record<string, string> = {
+  DRAFT: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
+  SENT: 'bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300',
+  PAID: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300',
+  OVERDUE: 'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300',
+  CANCELLED: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400',
+};
+
 export default async function BillingPanel() {
   const { periodStart } = malaysiaMonthBounds();
 
@@ -131,7 +139,12 @@ export default async function BillingPanel() {
                       {formatMYR(invoice.totalAmount)}
                     </td>
                     <td className="px-5 py-3">
-                      <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold uppercase dark:bg-neutral-800">
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${
+                          statusTone[invoice.status] ??
+                          'bg-neutral-100 dark:bg-neutral-800'
+                        }`}
+                      >
                         {invoice.status}
                       </span>
                     </td>

@@ -50,7 +50,7 @@ export default function IssueInvoicesButton() {
     }
   };
 
-  const send = async () => {
+  const createDrafts = async () => {
     setSending(true);
     try {
       const res = await fetch('/api/admin/invoices', {
@@ -59,22 +59,32 @@ export default function IssueInvoicesButton() {
         body: JSON.stringify({ period: 'current' }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Could not send invoices');
+      if (!res.ok) throw new Error(data.error || 'Could not create drafts');
       if (!data.created) {
         toast.success('Nothing to invoice for this month');
-      } else {
-        toast.success(
-          `Sent ${data.created} invoice${data.created === 1 ? '' : 's'}`
-        );
-        if (Array.isArray(data.errors) && data.errors.length) {
-          toast.error('Some invoices could not be sent. Try again.');
-        }
+        setOpen(false);
+        setPreview(null);
+        router.refresh();
+        return;
       }
+      toast.success(
+        `Created ${data.created} draft${data.created === 1 ? '' : 's'} — edit, then send`
+      );
+      if (Array.isArray(data.errors) && data.errors.length) {
+        toast.error('Some drafts could not be created. Try again.');
+      }
+      const first = Array.isArray(data.invoices) ? data.invoices[0] : null;
       setOpen(false);
       setPreview(null);
-      router.refresh();
+      if (first?.id) {
+        router.push(`/admin/billing/${first.id}`);
+      } else {
+        router.refresh();
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not send invoices');
+      toast.error(
+        err instanceof Error ? err.message : 'Could not create drafts'
+      );
     } finally {
       setSending(false);
     }
@@ -104,7 +114,7 @@ export default function IssueInvoicesButton() {
               <h2 className="text-lg font-semibold">Invoice preview</h2>
               <p className="mt-1 text-sm text-neutral-500">
                 {preview
-                  ? `${preview.periodLabel} · due ${preview.dueDate.slice(0, 10)}`
+                  ? `${preview.periodLabel} · due ${preview.dueDate.slice(0, 10)}. Drafts stay editable until you send them.`
                   : 'Loading unbilled company orders…'}
               </p>
             </div>
@@ -175,11 +185,11 @@ export default function IssueInvoicesButton() {
               <button
                 type="button"
                 disabled={sending || !preview?.drafts.length}
-                onClick={() => void send()}
+                onClick={() => void createDrafts()}
                 className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-60"
               >
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Send invoices
+                Create drafts
               </button>
             </div>
           </div>
