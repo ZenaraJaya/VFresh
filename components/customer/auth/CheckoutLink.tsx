@@ -1,11 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-
-const CHECKOUT_LOGIN_MESSAGE =
-  'Please sign in to continue checkout. After you sign in, you can set delivery and payment.';
+import CheckoutAuthModal from './CheckoutAuthModal';
 
 export default function CheckoutLink({
   children,
@@ -16,23 +14,34 @@ export default function CheckoutLink({
   className?: string;
   onClick?: () => void;
 }) {
-  const router = useRouter();
   const { data, status } = useSession();
   const signedIn = status !== 'loading' && data?.user?.role === 'CUSTOMER';
+  const [authOpen, setAuthOpen] = useState(false);
 
   return (
-    <Link
-      href={signedIn ? '/checkout' : '/login?callbackUrl=/checkout'}
-      className={className}
-      onClick={(e) => {
-        onClick?.();
-        if (signedIn) return;
-        e.preventDefault();
-        window.alert(CHECKOUT_LOGIN_MESSAGE);
-        router.push('/login?callbackUrl=/checkout');
-      }}
-    >
-      {children}
-    </Link>
+    <>
+      <Link
+        href="/checkout"
+        className={className}
+        onClick={(e) => {
+          if (signedIn) {
+            onClick?.();
+            return;
+          }
+          e.preventDefault();
+          setAuthOpen(true);
+        }}
+      >
+        {children}
+      </Link>
+      <CheckoutAuthModal
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+        onAuthenticated={() => {
+          setAuthOpen(false);
+          onClick?.();
+        }}
+      />
+    </>
   );
 }

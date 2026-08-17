@@ -5,6 +5,7 @@
 // rejects unless the whole project opts into allowImportingTsExtensions.
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
+import DEMO_ACCOUNTS from '../lib/demo-accounts.json' with { type: 'json' };
 import { neonConfig } from '@neondatabase/serverless';
 import { PrismaNeon } from '@prisma/adapter-neon';
 import ws from 'ws';
@@ -185,28 +186,44 @@ const COMPANIES = [
 ];
 
 async function main() {
-  const email = (process.env.SEED_ADMIN_EMAIL ?? 'admin@vfresh.my')
+  const demoAdmin = DEMO_ACCOUNTS.admin;
+  const extraAdminEmail = (process.env.SEED_ADMIN_EMAIL ?? demoAdmin.email)
     .toLowerCase()
     .trim();
-  const password = process.env.SEED_ADMIN_PASSWORD;
+  const extraAdminPassword = process.env.SEED_ADMIN_PASSWORD;
 
-  if (!password) {
-    throw new Error(
-      'SEED_ADMIN_PASSWORD is not set — refusing to seed an admin with a guessable password.'
-    );
-  }
-
+  const demoAdminHash = await bcrypt.hash(demoAdmin.password, 10);
   const admin = await prisma.admin.upsert({
-    where: { email },
-    update: {},
+    where: { email: demoAdmin.email },
+    update: { password: demoAdminHash, name: 'VFresh Admin' },
     create: {
-      email,
+      email: demoAdmin.email,
       name: 'VFresh Admin',
-      password: await bcrypt.hash(password, 10),
-      role: 'ADMIN'
-    }
+      password: demoAdminHash,
+      role: 'ADMIN',
+    },
   });
   console.log(`admin: ${admin.email}`);
+
+  if (extraAdminEmail && extraAdminEmail !== demoAdmin.email) {
+    if (!extraAdminPassword) {
+      throw new Error(
+        'SEED_ADMIN_PASSWORD is required when SEED_ADMIN_EMAIL is not the demo admin.'
+      );
+    }
+    const extraHash = await bcrypt.hash(extraAdminPassword, 10);
+    const extra = await prisma.admin.upsert({
+      where: { email: extraAdminEmail },
+      update: { password: extraHash },
+      create: {
+        email: extraAdminEmail,
+        name: 'VFresh Admin',
+        password: extraHash,
+        role: 'ADMIN',
+      },
+    });
+    console.log(`admin: ${extra.email}`);
+  }
 
   for (const company of COMPANIES) {
     await prisma.company.upsert({
@@ -219,12 +236,12 @@ async function main() {
 
   // Vendors first so menu items can attach to them.
   const vendorEmail = (
-    process.env.SEED_VENDOR_EMAIL ?? 'vendor@vfresh.my'
+    process.env.SEED_VENDOR_EMAIL ?? DEMO_ACCOUNTS.vendor.email
   )
     .toLowerCase()
     .trim();
   const vendorPassword =
-    process.env.SEED_VENDOR_PASSWORD ?? 'VFreshVendor123!';
+    process.env.SEED_VENDOR_PASSWORD ?? DEMO_ACCOUNTS.vendor.password;
   const vendorPasswordHash = await bcrypt.hash(vendorPassword, 10);
 
   const vendor = await prisma.vendor.upsert({
@@ -270,39 +287,41 @@ async function main() {
   console.log(`vendor: ${vendor2.email} (APPROVED)`);
 
   const customerEmail = (
-    process.env.SEED_CUSTOMER_EMAIL ?? 'customer@vfresh.my'
+    process.env.SEED_CUSTOMER_EMAIL ?? DEMO_ACCOUNTS.customer.email
   )
     .toLowerCase()
     .trim();
   const customerPassword =
-    process.env.SEED_CUSTOMER_PASSWORD ?? password;
+    process.env.SEED_CUSTOMER_PASSWORD ?? DEMO_ACCOUNTS.customer.password;
+  const customerHash = await bcrypt.hash(customerPassword, 10);
 
   await prisma.customer.upsert({
     where: { email: customerEmail },
-    update: {},
+    update: { password: customerHash, name: 'Demo Customer' },
     create: {
       email: customerEmail,
       name: 'Demo Customer',
-      password: await bcrypt.hash(customerPassword, 10),
+      password: customerHash,
     },
   });
   console.log(`customer: ${customerEmail}`);
 
   const courierEmail = (
-    process.env.SEED_COURIER_EMAIL ?? 'courier@vfresh.my'
+    process.env.SEED_COURIER_EMAIL ?? DEMO_ACCOUNTS.delivery.email
   )
     .toLowerCase()
     .trim();
   const courierPassword =
-    process.env.SEED_COURIER_PASSWORD ?? 'VFreshCourier123!';
+    process.env.SEED_COURIER_PASSWORD ?? DEMO_ACCOUNTS.delivery.password;
+  const courierHash = await bcrypt.hash(courierPassword, 10);
   await prisma.courier.upsert({
     where: { email: courierEmail },
-    update: { name: 'Demo Rider' },
+    update: { name: 'Demo Rider', password: courierHash },
     create: {
       email: courierEmail,
       name: 'Demo Rider',
       phone: '+60123456789',
-      password: await bcrypt.hash(courierPassword, 10),
+      password: courierHash,
     },
   });
   console.log(`courier: ${courierEmail}`);

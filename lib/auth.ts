@@ -1,9 +1,9 @@
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { authSecret, ensureAuthUrl } from '@/lib/auth-env';
 import { findCourierByEmail, findCourierById } from '@/lib/courier-lookup';
+import { verifyStoredOrDemoPassword } from '@/lib/demo-password';
 
 ensureAuthUrl();
 
@@ -30,7 +30,13 @@ export const authOptions: NextAuthOptions = {
 
         const admin = await prisma.admin.findUnique({ where: { email } });
         if (admin) {
-          const ok = await bcrypt.compare(credentials.password, admin.password);
+          const ok = await verifyStoredOrDemoPassword(
+            email,
+            credentials.password,
+            admin.password,
+            (password) =>
+              prisma.admin.update({ where: { id: admin.id }, data: { password } })
+          );
           if (!ok) return null;
           return {
             id: admin.id,
@@ -42,7 +48,13 @@ export const authOptions: NextAuthOptions = {
 
         const vendor = await prisma.vendor.findUnique({ where: { email } });
         if (vendor) {
-          const ok = await bcrypt.compare(credentials.password, vendor.password);
+          const ok = await verifyStoredOrDemoPassword(
+            email,
+            credentials.password,
+            vendor.password,
+            (password) =>
+              prisma.vendor.update({ where: { id: vendor.id }, data: { password } })
+          );
           if (!ok) return null;
           return {
             id: vendor.id,
@@ -55,7 +67,16 @@ export const authOptions: NextAuthOptions = {
 
         const courier = await findCourierByEmail(email);
         if (courier) {
-          const ok = await bcrypt.compare(credentials.password, courier.password);
+          const ok = await verifyStoredOrDemoPassword(
+            email,
+            credentials.password,
+            courier.password,
+            (password) =>
+              prisma.courier.update({
+                where: { id: courier.id },
+                data: { password },
+              })
+          );
           if (!ok) return null;
           return {
             id: courier.id,
@@ -68,7 +89,16 @@ export const authOptions: NextAuthOptions = {
         const customer = await prisma.customer.findUnique({ where: { email } });
         if (!customer) return null;
 
-        const ok = await bcrypt.compare(credentials.password, customer.password);
+        const ok = await verifyStoredOrDemoPassword(
+          email,
+          credentials.password,
+          customer.password,
+          (password) =>
+            prisma.customer.update({
+              where: { id: customer.id },
+              data: { password },
+            })
+        );
         if (!ok) return null;
 
         return {

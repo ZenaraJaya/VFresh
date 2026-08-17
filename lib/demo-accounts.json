@@ -1,0 +1,22 @@
+{
+  "customer": {
+    "label": "Customer",
+    "email": "customer@vfresh.my",
+    "password": "VFreshAdmin123!"
+  },
+  "vendor": {
+    "label": "Vendor",
+    "email": "vendor@vfresh.my",
+    "password": "VFreshVendor123!"
+  },
+  "admin": {
+    "label": "Admin",
+    "email": "admin@vfresh.my",
+    "password": "VFreshAdmin123!"
+  },
+  "delivery": {
+    "label": "Delivery",
+    "email": "courier@vfresh.my",
+    "password": "VFreshCourier123!"
+  }
+}

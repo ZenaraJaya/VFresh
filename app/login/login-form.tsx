@@ -8,36 +8,11 @@ import { ChevronRight, Leaf, Loader2, Lock, Mail, ShoppingBag, Store, Bike } fro
 import toast from 'react-hot-toast';
 import PasswordInput from '@/components/shared/ui/PasswordInput';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
+import { DEMO_ACCOUNTS, type DemoRole } from '@/lib/demo-accounts';
 import { safeCallbackPath } from '@/lib/safe-callback';
 import { homeForRole } from '@/lib/home-for-role';
 
-type RoleTab = 'customer' | 'vendor' | 'admin' | 'delivery';
-
-const DEMOS: Record<
-  RoleTab,
-  { label: string; email: string; password: string }
-> = {
-  customer: {
-    label: 'Customer',
-    email: 'customer@vfresh.my',
-    password: 'VFreshAdmin123!',
-  },
-  vendor: {
-    label: 'Vendor',
-    email: 'vendor@vfresh.my',
-    password: 'VFreshVendor123!',
-  },
-  admin: {
-    label: 'Admin',
-    email: 'admin@vfresh.my',
-    password: 'VFreshAdmin123!',
-  },
-  delivery: {
-    label: 'Delivery',
-    email: 'courier@vfresh.my',
-    password: 'VFreshCourier123!',
-  },
-};
+type RoleTab = DemoRole;
 
 export default function LoginForm() {
   const router = useRouter();
@@ -125,7 +100,7 @@ export default function LoginForm() {
   };
 
   const fillDemo = (role: RoleTab) => {
-    const demo = DEMOS[role];
+    const demo = DEMO_ACCOUNTS[role];
     setActiveDemo(role);
     setEmail(demo.email);
     setPassword(demo.password);
@@ -220,7 +195,7 @@ export default function LoginForm() {
           Demo accounts
         </p>
         <div className="grid grid-cols-2 gap-1 rounded-xl bg-neutral-100 p-1 dark:bg-neutral-800 sm:grid-cols-4">
-          {(Object.keys(DEMOS) as RoleTab[]).map((key) => (
+          {(Object.keys(DEMO_ACCOUNTS) as RoleTab[]).map((key) => (
             <button
               key={key}
               type="button"
@@ -232,7 +207,7 @@ export default function LoginForm() {
                   : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200'
               } disabled:opacity-60`}
             >
-              {DEMOS[key].label}
+              {DEMO_ACCOUNTS[key].label}
             </button>
           ))}
         </div>
