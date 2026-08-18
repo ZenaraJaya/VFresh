@@ -497,7 +497,7 @@ export default function InvoiceEditor() {
               <span className="font-medium text-neutral-900 dark:text-white">
                 {form.billingEmail || '(add a billing email first)'}
               </span>
-              . The invoice is only marked sent if Brevo accepts the message.
+              . The invoice is only marked sent if the email is accepted.
             </p>
             <div className="flex justify-end gap-2 pt-1">
               <button

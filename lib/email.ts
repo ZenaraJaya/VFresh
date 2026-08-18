@@ -1,7 +1,31 @@
 /**
- * Send transactional email via Brevo (Sendinblue) API.
- * Uses BREVO_API_KEY + BREVO_SMTP_USER (sender email) + BREVO_SENDER_NAME.
+ * Send transactional email via Resend.
+ * Uses RESEND_API_KEY and EMAIL_FROM (or RESEND_FROM / BREVO_SENDER_EMAIL).
  */
+function envValue(name: string) {
+  return process.env[name]?.trim().replace(/^["']|["']$/g, '') || '';
+}
+
+function parseSender() {
+  const fallbackName = envValue('BREVO_SENDER_NAME') || 'VFresh';
+  const raw =
+    envValue('EMAIL_FROM') ||
+    envValue('RESEND_FROM') ||
+    envValue('BREVO_SENDER_EMAIL') ||
+    envValue('BREVO_SMTP_USER');
+  const named = /^(.*)<([^>]+)>\s*$/.exec(raw);
+  if (named) {
+    const name = named[1].trim().replace(/^["']|["']$/g, '') || fallbackName;
+    return { name, email: named[2].trim().toLowerCase() };
+  }
+  const value = raw.toLowerCase();
+  if (value.includes('@')) return { name: fallbackName, email: value };
+  if (value.includes('.')) {
+    return { name: fallbackName, email: `hello@${value}` };
+  }
+  return { name: fallbackName, email: value };
+}
+
 export async function sendEmail(opts: {
   to: string | string[];
   cc?: string[];
@@ -9,17 +33,19 @@ export async function sendEmail(opts: {
   html: string;
   text?: string;
 }) {
-  const apiKey = process.env.BREVO_API_KEY;
-  const senderEmail =
-    process.env.BREVO_SENDER_EMAIL || process.env.BREVO_SMTP_USER;
-  const senderName = process.env.BREVO_SENDER_NAME || 'VFresh';
+  const apiKey = envValue('RESEND_API_KEY');
+  const sender = parseSender();
+  const replyTo =
+    envValue('EMAIL_RECEIVE') ||
+    envValue('EMAIL_REPLY_TO') ||
+    sender.email;
 
   const to = uniqueEmails(opts.to);
   const cc = uniqueEmails(opts.cc).filter((email) => !to.includes(email));
 
-  if (!apiKey || !senderEmail) {
+  if (!apiKey || !sender.email.includes('@')) {
     console.warn(
-      'BREVO_API_KEY or BREVO_SMTP_USER missing — email not sent:',
+      'RESEND_API_KEY or EMAIL_FROM missing — email not sent:',
       opts.subject,
       '→',
       to.join(', ')
@@ -28,7 +54,7 @@ export async function sendEmail(opts: {
       ok: false as const,
       skipped: true as const,
       detail:
-        'Email is not configured. Set BREVO_API_KEY and a verified sender (BREVO_SENDER_EMAIL or BREVO_SMTP_USER).',
+        'Email is not configured. Set RESEND_API_KEY and EMAIL_FROM=vfresh.com (verify that domain in Resend).',
     };
   }
 
@@ -40,31 +66,30 @@ export async function sendEmail(opts: {
     };
   }
 
-  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+  const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
-      'api-key': apiKey,
+      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      Accept: 'application/json',
     },
     body: JSON.stringify({
-      sender: { name: senderName, email: senderEmail },
-      to: to.map((email) => ({ email })),
-      replyTo: { email: senderEmail, name: senderName },
-      ...(cc.length ? { cc: cc.map((email) => ({ email })) } : {}),
+      from: `${sender.name} <${sender.email}>`,
+      to,
+      ...(cc.length ? { cc } : {}),
+      reply_to: replyTo,
       subject: opts.subject,
-      htmlContent: opts.html,
-      textContent: opts.text,
+      html: opts.html,
+      ...(opts.text ? { text: opts.text } : {}),
     }),
   });
 
   if (!res.ok) {
     const raw = await res.text();
-    console.error('Brevo send failed', res.status, raw);
+    console.error('Resend send failed', res.status, raw);
     return {
       ok: false as const,
       skipped: false as const,
-      detail: brevoErrorMessage(raw, res.status),
+      detail: resendErrorMessage(raw, res.status),
     };
   }
 
@@ -82,12 +107,12 @@ function uniqueEmails(value?: string | string[] | null) {
   ];
 }
 
-function brevoErrorMessage(raw: string, status: number) {
+function resendErrorMessage(raw: string, status: number) {
   try {
-    const parsed = JSON.parse(raw) as { message?: string; code?: string };
+    const parsed = JSON.parse(raw) as { message?: string; name?: string };
     const message = parsed.message || '';
-    if (/sender|unauthorised|unauthorized|not verified/i.test(message)) {
-      return `${message} Use a sender verified in Brevo (BREVO_SENDER_EMAIL or BREVO_SMTP_USER).`;
+    if (/domain|not verified|from/i.test(message)) {
+      return `${message} Verify vfresh.com in Resend and send from EMAIL_FROM.`;
     }
     if (parsed.message) return parsed.message;
   } catch {
