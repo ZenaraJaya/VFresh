@@ -524,14 +524,14 @@ export function hoursOnWeekday(
   return { status: 'unscheduled' };
 }
 
-function hmFromMinutes(total: number) {
+function hmFromMinutes(total: number): string {
   const wrapped = ((total % (24 * 60)) + 24 * 60) % (24 * 60);
   const hours = Math.floor(wrapped / 60);
   const minutes = wrapped % 60;
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
-function minutesAlongWindow(open: string, close: string, step = 15) {
+function minutesAlongWindow(open: string, close: string, step = 15): number[] {
   const start = parseHm(open);
   const end = parseHm(close);
   if (start == null || end == null) return [];
@@ -570,7 +570,7 @@ export function deliveryTimeSlots(
     return minutesAlongWindow(FALLBACK_OPEN, FALLBACK_CLOSE).map(hmFromMinutes);
   }
 
-  let shared: Set<string> | null = null;
+  let shared: string[] | null = null;
   for (const vendor of vendors) {
     const hours = hoursOnWeekday(vendor, weekday);
     if (hours.status === 'closed') return [];
@@ -578,16 +578,14 @@ export function deliveryTimeSlots(
       hours.status === 'open'
         ? minutesAlongWindow(hours.open, hours.close)
         : minutesAlongWindow(FALLBACK_OPEN, FALLBACK_CLOSE);
-    const slots = new Set(
-      window
-        .filter((m) => !inLunchBreak(m, vendor))
-        .map(hmFromMinutes)
-    );
+    const slots = window
+      .filter((m) => !inLunchBreak(m, vendor))
+      .map(hmFromMinutes);
     shared = shared
-      ? new Set([...shared].filter((slot) => slots.has(slot)))
+      ? shared.filter((slot) => slots.includes(slot))
       : slots;
   }
-  return [...(shared ?? [])].sort();
+  return [...new Set<string>(shared ?? [])].sort();
 }
 
 export function isHmInVendorHours(
