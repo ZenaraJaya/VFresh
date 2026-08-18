@@ -116,7 +116,7 @@ export default function InvoiceEditor() {
       if (!res.ok) throw new Error(data.error || 'Update failed');
       applyInvoice(data);
       if (ok) toast.success(ok);
-      return data as InvoiceDetail & { emailed?: boolean };
+      return data as InvoiceDetail & { emailed?: boolean; emailedTo?: string };
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Update failed');
       return null;
@@ -143,11 +143,7 @@ export default function InvoiceEditor() {
     const sent = await patch({ action: 'send' });
     if (!sent) return;
     setConfirmSend(false);
-    toast.success(
-      sent.emailed
-        ? `Sent ${sent.invoiceNumber}`
-        : `${sent.invoiceNumber} marked sent (email was not delivered)`
-    );
+    toast.success(`Emailed ${sent.invoiceNumber} to ${sent.emailedTo || form.billingEmail}`);
   };
 
   if (loading) {
@@ -481,7 +477,7 @@ export default function InvoiceEditor() {
                     onClick={() => setConfirmSend(true)}
                     className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-60"
                   >
-                    Send invoice
+                    {invoice.status === 'SENT' ? 'Email again' : 'Send invoice'}
                   </button>
                 ) : null}
               </div>
@@ -493,10 +489,15 @@ export default function InvoiceEditor() {
       {confirmSend ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center">
           <div className="w-full max-w-md space-y-3 rounded-2xl bg-white p-5 dark:bg-neutral-900">
-            <h2 className="text-lg font-semibold">Send invoice</h2>
+            <h2 className="text-lg font-semibold">
+              {invoice.status === 'SENT' ? 'Email again' : 'Send invoice'}
+            </h2>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
               Save this preview and email {form.invoiceNumber} to{' '}
-              {form.billingEmail || 'the billing address'}?
+              <span className="font-medium text-neutral-900 dark:text-white">
+                {form.billingEmail || '(add a billing email first)'}
+              </span>
+              . The invoice is only marked sent if Brevo accepts the message.
             </p>
             <div className="flex justify-end gap-2 pt-1">
               <button

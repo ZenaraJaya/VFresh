@@ -21,6 +21,29 @@ export default function InvoiceRowActions({
   const cancelled = status === 'CANCELLED';
   const paid = status === 'PAID';
 
+  const send = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/invoices/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not send email');
+      toast.success(
+        data.emailedTo
+          ? `Emailed ${invoiceNumber} to ${data.emailedTo}`
+          : `Emailed ${invoiceNumber}`
+      );
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not send email');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const cancel = async () => {
     setBusy(true);
     try {
@@ -50,6 +73,16 @@ export default function InvoiceRowActions({
         >
           {status === 'DRAFT' ? 'Edit' : 'Preview'}
         </Link>
+        {!cancelled && !paid && (status === 'DRAFT' || status === 'SENT') ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void send()}
+            className="rounded-lg bg-emerald-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-600 disabled:opacity-60"
+          >
+            {busy ? 'Sending…' : status === 'SENT' ? 'Email again' : 'Email'}
+          </button>
+        ) : null}
         {!cancelled && !paid ? (
           <button
             type="button"

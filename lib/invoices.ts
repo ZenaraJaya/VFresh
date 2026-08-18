@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { miriYmd } from '@/lib/miri-date';
 import { formatMYR, toMoney } from '@/lib/pricing';
 import { companyInvoiceEmail, sendEmail } from '@/lib/email';
+import { appBaseUrl } from '@/lib/admin-contact';
 
 export type InvoicePeriod = 'current' | 'previous';
 
@@ -53,6 +54,7 @@ export async function unbilledCompanyOrders(opts: {
       paymentMethod: 'COMPANY_ACCOUNT',
       status: { not: 'CANCELLED' },
       createdAt: { gte: periodStart, lt: periodEnd },
+      company: { status: 'APPROVED', isActive: true },
       ...(opts.companyId ? { companyId: opts.companyId } : {}),
     },
     select: {
@@ -79,7 +81,13 @@ export async function previewCompanyInvoices(opts: {
   const companies = companyIds.length
     ? await prisma.company.findMany({
         where: { id: { in: companyIds } },
-        select: { id: true, name: true, billingEmail: true },
+        select: {
+          id: true,
+          name: true,
+          billingEmail: true,
+          billingAddress: true,
+          phone: true,
+        },
       })
     : [];
   const companyById = new Map(companies.map((row) => [row.id, row]));
@@ -91,6 +99,8 @@ export async function previewCompanyInvoices(opts: {
       companyId,
       name: company?.name ?? companyId,
       billingEmail: company?.billingEmail ?? '',
+      billingAddress: company?.billingAddress ?? null,
+      phone: company?.phone ?? null,
       orderCount: lines.length,
       totalAmount: toMoney(lines.reduce((sum, line) => sum + line.total, 0)),
       orders: lines.map((line) => ({
@@ -133,6 +143,7 @@ export async function issueCompanyInvoices(opts: {
       paymentMethod: 'COMPANY_ACCOUNT',
       status: { not: 'CANCELLED' },
       createdAt: { gte: periodStart, lt: periodEnd },
+      company: { status: 'APPROVED', isActive: true },
       ...(opts.companyId ? { companyId: opts.companyId } : {}),
       ...(opts.orderIds?.length ? { id: { in: opts.orderIds } } : {}),
     },
@@ -160,12 +171,27 @@ export async function issueCompanyInvoices(opts: {
     if (group.ids.length === 0) continue;
     const company = await prisma.company.findUnique({
       where: { id: companyId },
-      select: { id: true, name: true, billingEmail: true },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        isActive: true,
+        billingEmail: true,
+        billingAddress: true,
+        phone: true,
+      },
     });
     if (!company) continue;
+    if (company.status !== 'APPROVED' || !company.isActive) {
+      errors.push(`${company.name} is not approved for invoicing yet`);
+      continue;
+    }
+    if (!company.billingEmail.trim()) {
+      errors.push(`${company.name} has no billing email on file`);
+      continue;
+    }
 
     const invoiceNumber = newInvoiceNumber();
-    const asSent = opts.sendMail === true;
     try {
       const invoice = await prisma.invoice.create({
         data: {
@@ -174,7 +200,7 @@ export async function issueCompanyInvoices(opts: {
           periodStart,
           periodEnd,
           totalAmount: group.total,
-          status: asSent ? 'SENT' : 'DRAFT',
+          status: 'DRAFT',
           dueDate: dueDateFromPeriodEnd(periodEnd),
         },
       });
@@ -184,27 +210,16 @@ export async function issueCompanyInvoices(opts: {
       });
 
       let emailed = false;
-      if (asSent && company.billingEmail) {
-        const mail = companyInvoiceEmail({
-          companyName: company.name,
-          invoiceNumber: invoice.invoiceNumber,
-          amount: formatMYR(invoice.totalAmount),
-          orderCount: group.ids.length,
-          dueYmd: invoice.dueDate.toISOString().slice(0, 10),
-          periodLabel: periodStart.toLocaleDateString('en-MY', {
-            month: 'long',
-            year: 'numeric',
-            timeZone: 'Asia/Kuching',
-          }),
-        });
+      if (opts.sendMail === true) {
         try {
-          const sent = await sendEmail({
-            to: company.billingEmail,
-            ...mail,
-          });
-          emailed = Boolean(sent.ok);
+          const sent = await sendInvoice(invoice.id);
+          emailed = Boolean(sent?.emailed);
         } catch (error) {
-          console.error('Invoice email failed', error);
+          errors.push(
+            `${company.name}: ${
+              error instanceof Error ? error.message : 'Could not email invoice'
+            }`
+          );
         }
       }
 
@@ -481,9 +496,9 @@ export async function sendInvoice(id: string) {
     throw new Error('Add at least one order before sending');
   }
 
-  const to = invoice.company.billingEmail?.trim();
-  if (!to) {
-    throw new Error('Add a billing email before sending');
+  const billedTo = invoice.company.billingEmail.trim().toLowerCase();
+  if (!billedTo || !billedTo.includes('@')) {
+    throw new Error('Add a real billing email on the company before sending');
   }
 
   const periodLabel = invoice.periodStart.toLocaleDateString('en-MY', {
@@ -498,17 +513,33 @@ export async function sendInvoice(id: string) {
     orderCount: billable.length,
     dueYmd: invoice.dueDate.toISOString().slice(0, 10),
     periodLabel,
+    billingEmail: billedTo,
+    billingAddress: invoice.company.billingAddress,
+    phone: invoice.company.phone,
+    viewUrl: `${appBaseUrl()}/account/invoices/${invoice.id}`,
   });
-  let emailed = false;
-  const sent = await sendEmail({ to, ...mail });
-  emailed = Boolean(sent.ok);
+
+  const sent = await sendEmail({
+    ...mail,
+    to: billedTo,
+  });
+  if (!sent.ok) {
+    throw new Error(
+      sent.detail ||
+        `Could not email ${billedTo}. Check the company billing email and try again.`
+    );
+  }
 
   await prisma.invoice.update({
     where: { id },
     data: { status: 'SENT' },
   });
 
-  return { ...(await loadAdminInvoice(id)), emailed };
+  return {
+    ...(await loadAdminInvoice(id)),
+    emailed: true,
+    emailedTo: billedTo,
+  };
 }
 
 export async function cancelInvoice(id: string) {

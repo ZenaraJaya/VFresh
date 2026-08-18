@@ -3,23 +3,41 @@
  * Uses BREVO_API_KEY + BREVO_SMTP_USER (sender email) + BREVO_SENDER_NAME.
  */
 export async function sendEmail(opts: {
-  to: string;
+  to: string | string[];
+  cc?: string[];
   subject: string;
   html: string;
   text?: string;
 }) {
   const apiKey = process.env.BREVO_API_KEY;
-  const senderEmail = process.env.BREVO_SMTP_USER;
+  const senderEmail =
+    process.env.BREVO_SENDER_EMAIL || process.env.BREVO_SMTP_USER;
   const senderName = process.env.BREVO_SENDER_NAME || 'VFresh';
+
+  const to = uniqueEmails(opts.to);
+  const cc = uniqueEmails(opts.cc).filter((email) => !to.includes(email));
 
   if (!apiKey || !senderEmail) {
     console.warn(
       'BREVO_API_KEY or BREVO_SMTP_USER missing — email not sent:',
       opts.subject,
       '→',
-      opts.to
+      to.join(', ')
     );
-    return { ok: false as const, skipped: true as const };
+    return {
+      ok: false as const,
+      skipped: true as const,
+      detail:
+        'Email is not configured. Set BREVO_API_KEY and a verified sender (BREVO_SENDER_EMAIL or BREVO_SMTP_USER).',
+    };
+  }
+
+  if (to.length === 0) {
+    return {
+      ok: false as const,
+      skipped: false as const,
+      detail: 'No recipient email',
+    };
   }
 
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -31,7 +49,9 @@ export async function sendEmail(opts: {
     },
     body: JSON.stringify({
       sender: { name: senderName, email: senderEmail },
-      to: [{ email: opts.to }],
+      to: to.map((email) => ({ email })),
+      replyTo: { email: senderEmail, name: senderName },
+      ...(cc.length ? { cc: cc.map((email) => ({ email })) } : {}),
       subject: opts.subject,
       htmlContent: opts.html,
       textContent: opts.text,
@@ -39,12 +59,43 @@ export async function sendEmail(opts: {
   });
 
   if (!res.ok) {
-    const detail = await res.text();
-    console.error('Brevo send failed', res.status, detail);
-    return { ok: false as const, skipped: false as const, detail };
+    const raw = await res.text();
+    console.error('Brevo send failed', res.status, raw);
+    return {
+      ok: false as const,
+      skipped: false as const,
+      detail: brevoErrorMessage(raw, res.status),
+    };
   }
 
   return { ok: true as const };
+}
+
+function uniqueEmails(value?: string | string[] | null) {
+  const list = Array.isArray(value) ? value : value ? [value] : [];
+  return [
+    ...new Set(
+      list
+        .map((email) => email.trim().toLowerCase())
+        .filter((email) => email.includes('@'))
+    ),
+  ];
+}
+
+function brevoErrorMessage(raw: string, status: number) {
+  try {
+    const parsed = JSON.parse(raw) as { message?: string; code?: string };
+    const message = parsed.message || '';
+    if (/sender|unauthorised|unauthorized|not verified/i.test(message)) {
+      return `${message} Use a sender verified in Brevo (BREVO_SENDER_EMAIL or BREVO_SMTP_USER).`;
+    }
+    if (parsed.message) return parsed.message;
+  } catch {
+    // use raw text
+  }
+  const trimmed = raw.trim();
+  if (trimmed) return trimmed.slice(0, 280);
+  return `Email provider returned ${status}`;
 }
 
 export function vendorApprovalEmail(opts: {
@@ -91,7 +142,20 @@ export function companyInvoiceEmail(opts: {
   orderCount: number;
   dueYmd: string;
   periodLabel: string;
+  billingEmail?: string;
+  billingAddress?: string | null;
+  phone?: string | null;
+  viewUrl?: string;
 }) {
+  const billTo = [
+    opts.companyName,
+    opts.billingEmail,
+    opts.phone,
+    opts.billingAddress,
+  ]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join('\n');
   const subject = `VFresh invoice ${opts.invoiceNumber} — ${opts.companyName}`;
   const text = `Hi ${opts.companyName},
 
@@ -102,8 +166,11 @@ Orders: ${opts.orderCount}
 Amount: ${opts.amount}
 Due: ${opts.dueYmd}
 
-Sign in to VFresh → Account → Invoices to view it. Payment is due within 30 days.
+Bill to:
+${billTo || opts.companyName}
 
+Sign in to VFresh → Account → Invoices to view it. Payment is due within 30 days.
+${opts.viewUrl ? `\nView invoice: ${opts.viewUrl}\n` : ''}
 — VFresh`;
   const html = `
     <div style="font-family:sans-serif;line-height:1.5;color:#111">
@@ -115,7 +182,18 @@ Sign in to VFresh → Account → Invoices to view it. Payment is due within 30 
         Amount: <strong>${escapeHtml(opts.amount)}</strong><br/>
         Due: ${escapeHtml(opts.dueYmd)}
       </p>
-      <p>Sign in to VFresh → Account → Invoices to view it. Payment is due within 30 days.</p>
+      <p><strong>Bill to</strong><br/>
+        ${escapeHtml(opts.companyName)}<br/>
+        ${opts.billingEmail ? `${escapeHtml(opts.billingEmail)}<br/>` : ''}
+        ${opts.phone ? `${escapeHtml(opts.phone)}<br/>` : ''}
+        ${opts.billingAddress ? escapeHtml(opts.billingAddress).replace(/\n/g, '<br/>') : ''}
+      </p>
+      ${
+        opts.viewUrl
+          ? `<p><a href="${escapeHtml(opts.viewUrl)}">View invoice in VFresh</a></p>`
+          : '<p>Sign in to VFresh → Account → Invoices to view it.</p>'
+      }
+      <p>Payment is due within 30 days.</p>
       <p>— VFresh</p>
     </div>
   `;

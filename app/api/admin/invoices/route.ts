@@ -8,6 +8,7 @@ const schema = z.object({
   period: z.enum(['current', 'previous']).default('current'),
   companyId: z.string().min(1).optional(),
   orderIds: z.array(z.string().min(1)).optional(),
+  sendMail: z.boolean().optional(),
 });
 
 async function requireAdmin() {
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
       period: parsed.data.period,
       companyId: parsed.data.companyId,
       orderIds: parsed.data.orderIds,
-      sendMail: false,
+      sendMail: parsed.data.sendMail === true,
     });
     return NextResponse.json(result);
   } catch (error) {

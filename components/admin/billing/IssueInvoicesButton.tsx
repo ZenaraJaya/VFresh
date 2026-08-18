@@ -50,16 +50,16 @@ export default function IssueInvoicesButton() {
     }
   };
 
-  const createDrafts = async () => {
+  const createDrafts = async (sendMail = false) => {
     setSending(true);
     try {
       const res = await fetch('/api/admin/invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ period: 'current' }),
+        body: JSON.stringify({ period: 'current', sendMail }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Could not create drafts');
+      if (!res.ok) throw new Error(data.error || 'Could not create invoices');
       if (!data.created) {
         toast.success('Nothing to invoice for this month');
         setOpen(false);
@@ -67,23 +67,28 @@ export default function IssueInvoicesButton() {
         router.refresh();
         return;
       }
+      const emailed = Array.isArray(data.invoices)
+        ? data.invoices.filter((row: { emailed?: boolean }) => row.emailed).length
+        : 0;
       toast.success(
-        `Created ${data.created} draft${data.created === 1 ? '' : 's'} — edit, then send`
+        sendMail
+          ? `Created ${data.created} invoice${data.created === 1 ? '' : 's'} and emailed ${emailed}`
+          : `Created ${data.created} draft${data.created === 1 ? '' : 's'} — edit, then send`
       );
       if (Array.isArray(data.errors) && data.errors.length) {
-        toast.error('Some drafts could not be created. Try again.');
+        toast.error(data.errors[0]);
       }
       const first = Array.isArray(data.invoices) ? data.invoices[0] : null;
       setOpen(false);
       setPreview(null);
-      if (first?.id) {
+      if (first?.id && !sendMail) {
         router.push(`/admin/billing/${first.id}`);
       } else {
         router.refresh();
       }
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Could not create drafts'
+        err instanceof Error ? err.message : 'Could not create invoices'
       );
     } finally {
       setSending(false);
@@ -185,11 +190,19 @@ export default function IssueInvoicesButton() {
               <button
                 type="button"
                 disabled={sending || !preview?.drafts.length}
-                onClick={() => void createDrafts()}
+                onClick={() => void createDrafts(false)}
+                className="rounded-xl border border-neutral-200 px-3 py-2 text-sm font-medium text-neutral-800 transition hover:bg-white hover:text-neutral-900 dark:border-neutral-600 dark:text-neutral-100 dark:hover:bg-white dark:hover:text-neutral-900"
+              >
+                Create drafts
+              </button>
+              <button
+                type="button"
+                disabled={sending || !preview?.drafts.length}
+                onClick={() => void createDrafts(true)}
                 className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-60"
               >
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Create drafts
+                Create and email
               </button>
             </div>
           </div>
