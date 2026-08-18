@@ -326,7 +326,7 @@ export default function DeliveryDesk({
               <RouteMap
                 lat={order.deliveryLat}
                 lng={order.deliveryLng}
-                follow={open && mine}
+                follow={Boolean(open && mine)}
               />
               <ul className="text-sm text-neutral-600 dark:text-neutral-300">
                 {order.items.map((item, i) => (
