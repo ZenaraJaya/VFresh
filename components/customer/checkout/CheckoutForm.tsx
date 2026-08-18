@@ -23,6 +23,7 @@ import {
   hoursOnWeekday,
   type VendorHours,
 } from '@/lib/vendor-availability';
+import { isDeliveryTooSoon } from '@/lib/delivery-sla';
 import AddressMapPicker from '@/components/maps/AddressMapPicker';
 
 const schema = z.object({
