@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { useLivePoll } from '@/lib/use-live-poll';
 import { deliveryTrackPayload, isDeliveryLate, riderAwaitingReply } from '@/lib/delivery-sla';
 import DeliveryClock from '@/components/delivery/DeliveryClock';
-import DelayNotice from '@/components/delivery/DelayNotice';
+import DeliveryProofCard from '@/components/delivery/DeliveryProofCard';
 import OrderQr from '@/components/delivery/OrderQr';
 import { ymdFromValue } from '@/lib/miri-date';
 
@@ -23,6 +23,9 @@ type Row = {
   deliveredAt?: string | null;
   delayReason?: string | null;
   delayProof?: string | null;
+  proofTakenAt?: string | Date | null;
+  proofLat?: number | null;
+  proofLng?: number | null;
   courierName?: string | null;
   updatedAt?: string;
   riderNotifiedAt?: string | null;
@@ -227,9 +230,12 @@ export default function VendorDeliveryBoard() {
                         />
                       </div>
                       <div className="mt-3">
-                        <DelayNotice
-                          reason={order.delayReason}
+                        <DeliveryProofCard
                           proof={order.delayProof}
+                          takenAt={order.proofTakenAt}
+                          lat={order.proofLat}
+                          lng={order.proofLng}
+                          reason={order.delayReason}
                         />
                       </div>
                     </li>

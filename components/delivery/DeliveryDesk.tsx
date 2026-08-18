@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { Leaf, Loader2, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
-import { readImageFileAsJpeg } from '@/lib/read-image-file';
 import { DELAY_REASON_MIN } from '@/lib/delivery-sla';
 import { ORDER_STATUS_LABEL } from '@/lib/order-status';
 import { useLivePoll } from '@/lib/use-live-poll';
 import DeliveryClock from '@/components/delivery/DeliveryClock';
-import DelayNotice from '@/components/delivery/DelayNotice';
+import DeliveryProofCard from '@/components/delivery/DeliveryProofCard';
+import ProofCapture from '@/components/delivery/ProofCapture';
 import QrScanner from '@/components/delivery/QrScanner';
+import RouteMap from '@/components/maps/RouteMap';
 
 type Track = {
   promisedAt: string;
@@ -29,6 +30,11 @@ type Order = {
   status: string;
   employeeName: string;
   deliveryLocation: string;
+  deliveryLat?: number | null;
+  deliveryLng?: number | null;
+  proofTakenAt?: string | Date | null;
+  proofLat?: number | null;
+  proofLng?: number | null;
   deliveryDate: string;
   deliveryTime: string | null;
   vendor: { businessName: string } | null;
@@ -58,6 +64,11 @@ export default function DeliveryDesk({
   const [saving, setSaving] = useState(false);
   const [reason, setReason] = useState('');
   const [proof, setProof] = useState('');
+  const [proofMeta, setProofMeta] = useState<{
+    takenAt: string;
+    lat?: number;
+    lng?: number;
+  } | null>(null);
 
   const select = (next: Order) => {
     setOrder(next);
@@ -111,11 +122,17 @@ export default function DeliveryDesk({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const act = async (action: 'head_to_vendor' | 'pickup' | 'complete' | 'ack') => {
+  const act = async (
+    action: 'head_to_vendor' | 'pickup' | 'complete' | 'ack' | 'retake_proof'
+  ) => {
     if (!order) return;
-    if (action === 'complete' && order.track.late) {
-      if (reason.trim().length < DELAY_REASON_MIN || !proof) {
-        toast.error('This run is over 1 hour — add a reason and photo proof');
+    if (action === 'complete' || action === 'retake_proof') {
+      if (!proof) {
+        toast.error('Take a photo as delivery proof');
+        return;
+      }
+      if (order.track.late && reason.trim().length < DELAY_REASON_MIN) {
+        toast.error('This run is over 1 hour — add a reason');
         return;
       }
     }
@@ -128,8 +145,14 @@ export default function DeliveryDesk({
         body: JSON.stringify({
           orderNumber: order.orderNumber,
           action,
-          ...(action === 'complete' && order.track.late
-            ? { delayReason: reason.trim(), delayProof: proof }
+          ...((action === 'complete' || action === 'retake_proof') && proof
+            ? {
+                delayReason: reason.trim() || undefined,
+                delayProof: proof,
+                proofTakenAt: proofMeta?.takenAt,
+                proofLat: proofMeta?.lat,
+                proofLng: proofMeta?.lng,
+              }
             : {}),
         }),
       });
@@ -147,7 +170,9 @@ export default function DeliveryDesk({
             ? 'This run is yours — other riders cannot take it'
             : action === 'pickup'
               ? 'Picked up — 1 hour starts now'
-              : 'Marked complete'
+              : action === 'retake_proof'
+                ? 'Photo updated'
+                : 'Marked complete'
       );
     } catch {
       toast.error('Update failed');
@@ -171,6 +196,9 @@ export default function DeliveryDesk({
     open &&
     mine &&
     (order.status === 'OUT_FOR_DELIVERY' || Boolean(order.track.pickedUpAt));
+  const canRetake = Boolean(
+    order && mine && order.status === 'DELIVERED' && !takenByOther
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col p-4 sm:p-6 lg:p-8">
@@ -295,6 +323,11 @@ export default function DeliveryDesk({
               <p className="text-sm text-neutral-700 dark:text-neutral-200">
                 {order.deliveryLocation}
               </p>
+              <RouteMap
+                lat={order.deliveryLat}
+                lng={order.deliveryLng}
+                follow={open && mine}
+              />
               <ul className="text-sm text-neutral-600 dark:text-neutral-300">
                 {order.items.map((item, i) => (
                   <li key={i}>
@@ -339,45 +372,36 @@ export default function DeliveryDesk({
                 </p>
               )}
 
-              <DelayNotice reason={order.track.delayReason} proof={order.track.delayProof} />
+              <DeliveryProofCard
+                proof={order.track.delayProof}
+                takenAt={order.proofTakenAt}
+                lat={order.proofLat}
+                lng={order.proofLng}
+                reason={order.track.delayReason}
+              />
 
-              {open && order.track.late && (
+              {(canComplete || canRetake) && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Why is it late?
-                    <RequiredMark />
-                  </label>
-                  <textarea
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    rows={3}
-                    className="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-neutral-700 dark:bg-neutral-950"
-                    placeholder="Traffic, customer not at desk, rain…"
+                  {order.track.late ? (
+                    <>
+                      <label className="text-sm font-medium">
+                        Why is it late?
+                        <RequiredMark />
+                      </label>
+                      <textarea
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        rows={3}
+                        className="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-neutral-700 dark:bg-neutral-950"
+                        placeholder="Traffic, customer not at desk, rain…"
+                      />
+                    </>
+                  ) : null}
+                  <ProofCapture
+                    value={proof}
+                    onChange={setProof}
+                    onMeta={setProofMeta}
                   />
-                  <label className="text-sm font-medium">
-                    Photo proof
-                    <RequiredMark />
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      try {
-                        setProof(await readImageFileAsJpeg(file, 960, 0.78));
-                      } catch (err) {
-                        toast.error(
-                          err instanceof Error ? err.message : 'Could not read photo'
-                        );
-                      }
-                    }}
-                    className="w-full text-sm"
-                  />
-                  {proof && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={proof} alt="" className="max-h-40 rounded-lg object-cover" />
-                  )}
                 </div>
               )}
 
@@ -387,7 +411,7 @@ export default function DeliveryDesk({
                 </p>
               )}
 
-              {open && mine && (
+              {(open && mine) || canRetake ? (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {canHead && (
                     <button
@@ -419,8 +443,18 @@ export default function DeliveryDesk({
                       {saving ? 'Saving…' : 'Complete / received'}
                     </button>
                   )}
+                  {canRetake ? (
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => void act('retake_proof')}
+                      className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700"
+                    >
+                      {saving ? 'Saving…' : 'Save retake'}
+                    </button>
+                  ) : null}
                 </div>
-              )}
+              ) : null}
             </div>
           ) : null}
         </div>

@@ -11,6 +11,7 @@ import type { OrderStatus } from '@/types';
 import { ORDER_STATUS_LABEL, VENDOR_ORDER_STATUSES } from '@/lib/order-status';
 import { DELAY_REASON_MIN, isDeliveryLate } from '@/lib/delivery-sla';
 import { readImageFileAsJpeg } from '@/lib/read-image-file';
+import DeliveryProofCard from '@/components/delivery/DeliveryProofCard';
 
 type Row = {
   id: string;
@@ -26,6 +27,9 @@ type Row = {
   deliveredAt?: string | null;
   delayReason?: string | null;
   delayProof?: string | null;
+  proofTakenAt?: string | Date | null;
+  proofLat?: number | null;
+  proofLng?: number | null;
   courierName?: string | null;
   updatedAt?: string;
   company: { name: string };
@@ -198,6 +202,15 @@ export default function VendorOrdersBoard() {
                     Delay: {order.delayReason}
                   </p>
                 )}
+                <div className="mt-3">
+                  <DeliveryProofCard
+                    proof={order.delayProof}
+                    takenAt={order.proofTakenAt}
+                    lat={order.proofLat}
+                    lng={order.proofLng}
+                    reason={order.delayReason}
+                  />
+                </div>
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 {order.status !== 'DELIVERED' && order.status !== 'CANCELLED' && (
                   <button

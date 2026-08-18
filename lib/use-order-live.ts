@@ -12,6 +12,11 @@ export type OrderLiveSnap = {
   delayReason?: string | null;
   delayProof?: string | null;
   courierName?: string | null;
+  proofTakenAt?: string | null;
+  proofLat?: number | null;
+  proofLng?: number | null;
+  deliveryLat?: number | null;
+  deliveryLng?: number | null;
   deliveryDate?: string;
   deliveryTime?: string | null;
   dueAt?: string | null;
@@ -43,6 +48,11 @@ async function pull(orderNumber: string) {
     delayReason: data.delayReason ?? data.track?.delayReason ?? null,
     delayProof: data.delayProof ?? data.track?.delayProof ?? null,
     courierName: data.courierName ?? null,
+    proofTakenAt: data.proofTakenAt ?? null,
+    proofLat: data.proofLat ?? null,
+    proofLng: data.proofLng ?? null,
+    deliveryLat: data.deliveryLat ?? null,
+    deliveryLng: data.deliveryLng ?? null,
     deliveryDate: data.deliveryDate,
     deliveryTime: data.deliveryTime ?? null,
     dueAt: data.track?.dueAt ?? null,

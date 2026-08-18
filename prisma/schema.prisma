@@ -229,6 +229,8 @@ model Order {
   employeePhone       String?
   department          String?
   deliveryLocation    String
+  deliveryLat         Float?
+  deliveryLng         Float?
   deliveryDate        DateTime      @default(now())
   deliveryTime        String?
   specialInstructions String?
@@ -246,8 +248,12 @@ model Order {
   pickedUpAt          DateTime?
   deliveredAt         DateTime?
   delayReason         String?
-  /// Photo proof (data URL or https) if delivery took more than 1 hour.
+  /// Delivery photo (data URL or https). Required on complete.
   delayProof          String?
+  /// When the delivery photo was taken.
+  proofTakenAt        DateTime?
+  proofLat            Float?
+  proofLng            Float?
   /// Kitchen pinged the rider; riderAckAt is set when they reply on the desk.
   riderNotifiedAt     DateTime?
   riderNotifyNote     String?

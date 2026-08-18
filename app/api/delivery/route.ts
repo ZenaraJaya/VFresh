@@ -18,9 +18,12 @@ export const dynamic = 'force-dynamic';
 
 const postSchema = z.object({
   orderNumber: z.string().min(1),
-  action: z.enum(['head_to_vendor', 'pickup', 'complete', 'ack']),
+  action: z.enum(['head_to_vendor', 'pickup', 'complete', 'ack', 'retake_proof']),
   delayReason: z.string().max(1000).optional(),
   delayProof: z.string().max(400_000).optional(),
+  proofTakenAt: z.string().optional(),
+  proofLat: z.number().optional(),
+  proofLng: z.number().optional(),
 });
 
 async function requireRider() {
@@ -117,10 +120,27 @@ export async function POST(req: NextRequest) {
         id: rider.session.user.id,
         name: rider.session.user.name,
       });
+    } else if (parsed.data.action === 'retake_proof') {
+      if (existing.status === 'CANCELLED') {
+        return NextResponse.json(
+          { error: 'This order was cancelled' },
+          { status: 400 }
+        );
+      }
+      await markOrderReceived(existing.id, {
+        delayReason: parsed.data.delayReason,
+        delayProof: parsed.data.delayProof,
+        proofTakenAt: parsed.data.proofTakenAt,
+        proofLat: parsed.data.proofLat,
+        proofLng: parsed.data.proofLng,
+      });
     } else {
       await markOrderReceived(existing.id, {
         delayReason: parsed.data.delayReason,
         delayProof: parsed.data.delayProof,
+        proofTakenAt: parsed.data.proofTakenAt,
+        proofLat: parsed.data.proofLat,
+        proofLng: parsed.data.proofLng,
       });
     }
 

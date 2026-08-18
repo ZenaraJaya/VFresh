@@ -23,7 +23,7 @@ import {
   hoursOnWeekday,
   type VendorHours,
 } from '@/lib/vendor-availability';
-import { isDeliveryTooSoon } from '@/lib/delivery-sla';
+import AddressMapPicker from '@/components/maps/AddressMapPicker';
 
 const schema = z.object({
   companyId: z.string().min(1, 'Select your company'),
@@ -77,6 +77,7 @@ export default function CheckoutForm() {
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>('CREDIT_CARD');
   const [submitting, setSubmitting] = useState(false);
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
 
   const {
     register,
@@ -226,6 +227,8 @@ export default function CheckoutForm() {
         body: JSON.stringify({
           ...values,
           paymentMethod,
+          deliveryLat: pin?.lat,
+          deliveryLng: pin?.lng,
           items: lines.map((l) => ({
             menuItemId: l.menuItem.id,
             quantity: l.quantity,
@@ -395,6 +398,17 @@ export default function CheckoutForm() {
           {errors.deliveryLocation && (
             <p className={errorClass}>{errors.deliveryLocation.message}</p>
           )}
+          <div className="mt-3">
+            <AddressMapPicker
+              address={watch('deliveryLocation')}
+              lat={pin?.lat}
+              lng={pin?.lng}
+              onChange={({ address, lat, lng }) => {
+                setPin({ lat, lng });
+                if (address) setValue('deliveryLocation', address, { shouldValidate: true });
+              }}
+            />
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

@@ -14,6 +14,11 @@ export type DeliveryOrderRow = {
   deliveredAt: Date | null;
   delayReason: string | null;
   delayProof: string | null;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
+  proofTakenAt: Date | null;
+  proofLat: number | null;
+  proofLng: number | null;
   riderNotifiedAt: Date | null;
   riderNotifyNote: string | null;
   riderAckAt: Date | null;
@@ -38,6 +43,11 @@ type RawOrder = {
   deliveredAt: Date | null;
   delayReason: string | null;
   delayProof: string | null;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
+  proofTakenAt: Date | null;
+  proofLat: number | null;
+  proofLng: number | null;
   riderNotifiedAt: Date | null;
   riderNotifyNote: string | null;
   riderAckAt: Date | null;
@@ -62,6 +72,11 @@ function asOrder(row: RawOrder, items: DeliveryOrderRow['items']): DeliveryOrder
     deliveredAt: row.deliveredAt,
     delayReason: row.delayReason,
     delayProof: row.delayProof,
+    deliveryLat: row.deliveryLat == null ? null : Number(row.deliveryLat),
+    deliveryLng: row.deliveryLng == null ? null : Number(row.deliveryLng),
+    proofTakenAt: row.proofTakenAt,
+    proofLat: row.proofLat == null ? null : Number(row.proofLat),
+    proofLng: row.proofLng == null ? null : Number(row.proofLng),
     riderNotifiedAt: row.riderNotifiedAt,
     riderNotifyNote: row.riderNotifyNote,
     riderAckAt: row.riderAckAt,
@@ -123,6 +138,7 @@ export async function getDeliveryOrderByNumber(orderNumber: string) {
       o.id, o."orderNumber", o.status, o."stockDeducted", o."deliveryLocation",
       o."deliveryDate", o."deliveryTime", o."employeeName",
       o."pickedUpAt", o."deliveredAt", o."delayReason", o."delayProof",
+      o."deliveryLat", o."deliveryLng", o."proofTakenAt", o."proofLat", o."proofLng",
       o."riderNotifiedAt", o."riderNotifyNote", o."riderAckAt",
       o."courierId", o."courierName", o."updatedAt",
       v."businessName" AS "vendorName",
@@ -143,6 +159,7 @@ export async function getDeliveryOrderById(id: string) {
       o.id, o."orderNumber", o.status, o."stockDeducted", o."deliveryLocation",
       o."deliveryDate", o."deliveryTime", o."employeeName",
       o."pickedUpAt", o."deliveredAt", o."delayReason", o."delayProof",
+      o."deliveryLat", o."deliveryLng", o."proofTakenAt", o."proofLat", o."proofLng",
       o."riderNotifiedAt", o."riderNotifyNote", o."riderAckAt",
       o."courierId", o."courierName", o."updatedAt",
       v."businessName" AS "vendorName",
@@ -163,6 +180,7 @@ export async function listOpenDeliveryRuns(courierId: string) {
       o.id, o."orderNumber", o.status, o."stockDeducted", o."deliveryLocation",
       o."deliveryDate", o."deliveryTime", o."employeeName",
       o."pickedUpAt", o."deliveredAt", o."delayReason", o."delayProof",
+      o."deliveryLat", o."deliveryLng", o."proofTakenAt", o."proofLat", o."proofLng",
       o."riderNotifiedAt", o."riderNotifyNote", o."riderAckAt",
       o."courierId", o."courierName", o."updatedAt",
       v."businessName" AS "vendorName",
@@ -190,6 +208,7 @@ export async function listDeliveryInbox(courierId: string) {
       o.id, o."orderNumber", o.status, o."stockDeducted", o."deliveryLocation",
       o."deliveryDate", o."deliveryTime", o."employeeName",
       o."pickedUpAt", o."deliveredAt", o."delayReason", o."delayProof",
+      o."deliveryLat", o."deliveryLng", o."proofTakenAt", o."proofLat", o."proofLng",
       o."riderNotifiedAt", o."riderNotifyNote", o."riderAckAt",
       o."courierId", o."courierName", o."updatedAt",
       v."businessName" AS "vendorName",

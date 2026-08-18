@@ -109,7 +109,7 @@ export function formatDuration(ms: number) {
 
 export function delayProofOk(raw: unknown): { error: string } | { value: string } {
   if (raw === null || raw === undefined || raw === '') {
-    return { error: 'Add a photo as proof of the delay.' };
+    return { error: 'Add a photo as delivery proof.' };
   }
   const value = String(raw).trim();
   if (value.length > MAX_PROOF_LENGTH) {
@@ -128,7 +128,7 @@ export function delayProofOk(raw: unknown): { error: string } | { value: string 
     }
     return { value };
   } catch {
-    return { error: 'Add a photo as proof of the delay.' };
+    return { error: 'Add a photo as delivery proof.' };
   }
 }
 

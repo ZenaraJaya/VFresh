@@ -2,7 +2,8 @@
 
 import { useOrderLive } from '@/lib/use-order-live';
 import DeliveryClock from '@/components/delivery/DeliveryClock';
-import DelayNotice from '@/components/delivery/DelayNotice';
+import DeliveryProofCard from '@/components/delivery/DeliveryProofCard';
+import RouteMap from '@/components/maps/RouteMap';
 
 export default function OrderDeliveryNote({
   orderNumber,
@@ -14,6 +15,12 @@ export default function OrderDeliveryNote({
   delayReason,
   delayProof,
   courierName,
+  deliveryLat,
+  deliveryLng,
+  proofTakenAt,
+  proofLat,
+  proofLng,
+  deliveryLocation,
 }: {
   orderNumber: string;
   status: string;
@@ -24,6 +31,12 @@ export default function OrderDeliveryNote({
   delayReason?: string | null;
   delayProof?: string | null;
   courierName?: string | null;
+  deliveryLat?: number | null;
+  deliveryLng?: number | null;
+  proofTakenAt?: string | Date | null;
+  proofLat?: number | null;
+  proofLng?: number | null;
+  deliveryLocation?: string | null;
 }) {
   const live = useOrderLive(orderNumber, {
     status: initialStatus,
@@ -35,6 +48,11 @@ export default function OrderDeliveryNote({
     delayReason,
     delayProof,
     courierName,
+    proofTakenAt: proofTakenAt ? String(proofTakenAt) : null,
+    proofLat: proofLat ?? null,
+    proofLng: proofLng ?? null,
+    deliveryLat: deliveryLat ?? null,
+    deliveryLng: deliveryLng ?? null,
   });
 
   if (live.status === 'CANCELLED') return null;
@@ -46,18 +64,29 @@ export default function OrderDeliveryNote({
           Rider: {live.courierName}
         </p>
       )}
+      <RouteMap
+        lat={live.deliveryLat}
+        lng={live.deliveryLng}
+        address={deliveryLocation}
+      />
       {live.dueAt && (
         <DeliveryClock dueAt={live.dueAt} deliveredAt={live.deliveredAt} />
       )}
-      <DelayNotice reason={live.delayReason} proof={live.delayProof} />
+      <DeliveryProofCard
+        proof={live.delayProof}
+        takenAt={live.proofTakenAt}
+        lat={live.proofLat}
+        lng={live.proofLng}
+        reason={live.delayReason}
+      />
       {live.status === 'DELIVERED' ? (
         <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
           Complete — marked as received.
         </p>
       ) : (
         <p className="rounded-xl bg-neutral-50 px-4 py-3 text-sm text-neutral-600 dark:bg-neutral-950 dark:text-neutral-300">
-          After pickup, delivery has 1 hour. If it runs late, the rider must
-          add a reason and photo — you will see it here.
+          The rider takes a photo with time and location when they arrive. You
+          can see it here. After pickup, delivery has 1 hour.
         </p>
       )}
     </div>

@@ -174,6 +174,12 @@ export default async function OrderConfirmationPage({
           delayReason={order.delayReason}
           delayProof={order.delayProof}
           courierName={order.courierName}
+          deliveryLat={order.deliveryLat}
+          deliveryLng={order.deliveryLng}
+          proofTakenAt={order.proofTakenAt}
+          proofLat={order.proofLat}
+          proofLng={order.proofLng}
+          deliveryLocation={order.deliveryLocation}
         />
         <Link
           href="/menu"

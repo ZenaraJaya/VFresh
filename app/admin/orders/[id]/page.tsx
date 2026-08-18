@@ -5,6 +5,9 @@ import { ArrowLeft } from 'lucide-react';
 import { requireAdmin } from '@/lib/auth-guard';
 import { prisma } from '@/lib/db';
 import { formatMYR } from '@/lib/pricing';
+import DeliveryProofCard from '@/components/delivery/DeliveryProofCard';
+import RouteMap from '@/components/maps/RouteMap';
+import OrderProgress from '@/components/customer/orders/OrderProgress';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,6 +61,57 @@ export default async function AdminOrderDetailPage({
           </p>
         </div>
         <span className="text-2xl font-bold">{formatMYR(order.total)}</span>
+      </div>
+
+      <div className="rounded-2xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
+        <h2 className="mb-4 font-semibold">Progress</h2>
+        <OrderProgress
+          orderNumber={order.orderNumber}
+          initialStatus={order.status}
+          initialStockDeducted={order.stockDeducted}
+        />
+        <dl className="mt-5 grid gap-2 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-neutral-500">Placed</dt>
+            <dd className="font-medium">
+              {order.createdAt.toLocaleString('en-MY', { timeZone: 'Asia/Kuching' })}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-neutral-500">Picked up</dt>
+            <dd className="font-medium">
+              {order.pickedUpAt
+                ? order.pickedUpAt.toLocaleString('en-MY', { timeZone: 'Asia/Kuching' })
+                : '—'}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-neutral-500">Delivered</dt>
+            <dd className="font-medium">
+              {order.deliveredAt
+                ? order.deliveredAt.toLocaleString('en-MY', { timeZone: 'Asia/Kuching' })
+                : '—'}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-neutral-500">Rider</dt>
+            <dd className="font-medium">{order.courierName ?? '—'}</dd>
+          </div>
+        </dl>
+        <div className="mt-4 space-y-4">
+          <RouteMap
+            lat={order.deliveryLat}
+            lng={order.deliveryLng}
+            address={order.deliveryLocation}
+          />
+          <DeliveryProofCard
+            proof={order.delayProof}
+            takenAt={order.proofTakenAt}
+            lat={order.proofLat}
+            lng={order.proofLng}
+            reason={order.delayReason}
+          />
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

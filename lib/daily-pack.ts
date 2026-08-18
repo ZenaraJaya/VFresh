@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { sellableQty } from '@/lib/daily-pack-qty';
-import { requireDelayIfLate, type DeliveryClockOrder } from '@/lib/delivery-sla';
+import { delayProofOk, requireDelayIfLate, type DeliveryClockOrder } from '@/lib/delivery-sla';
 
 const OPEN_ORDER = {
   status: { not: 'CANCELLED' as const },
@@ -100,15 +100,39 @@ async function restoreLines(tx: Tx, items: { menuItemId: string; quantity: numbe
 type DelayExtras = {
   delayReason?: unknown;
   delayProof?: unknown;
+  proofTakenAt?: unknown;
+  proofLat?: unknown;
+  proofLng?: unknown;
 };
+
+function asCoord(value: unknown) {
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) && Math.abs(n) <= 180 ? n : null;
+}
 
 function delayFields(order: DeliveryClockOrder, extras: DelayExtras, now: Date) {
   const checked = requireDelayIfLate(order, extras, now);
   if ('error' in checked) throw new Error(checked.error);
+  const hasPhoto =
+    extras.delayProof !== undefined &&
+    extras.delayProof !== null &&
+    extras.delayProof !== '';
+  const proof = hasPhoto ? delayProofOk(extras.delayProof) : null;
+  if (proof && 'error' in proof) throw new Error(proof.error);
+  const takenRaw = extras.proofTakenAt
+    ? new Date(String(extras.proofTakenAt))
+    : now;
+  const takenAt = Number.isNaN(takenRaw.getTime()) ? now : takenRaw;
   return {
     deliveredAt: now,
-    ...(checked.delayReason
-      ? { delayReason: checked.delayReason, delayProof: checked.delayProof }
+    ...(checked.delayReason ? { delayReason: checked.delayReason } : {}),
+    ...(proof && 'value' in proof
+      ? {
+          delayProof: proof.value,
+          proofTakenAt: takenAt,
+          proofLat: asCoord(extras.proofLat),
+          proofLng: asCoord(extras.proofLng),
+        }
       : {}),
   };
 }
@@ -141,7 +165,24 @@ export async function markOrderReceived(orderId: string, extras: DelayExtras = {
           },
         });
       }
-      return order;
+      return tx.order.update({
+        where: { id: orderId },
+        data: {
+          ...(lateData.delayProof
+            ? {
+                delayProof: lateData.delayProof,
+                proofTakenAt: lateData.proofTakenAt,
+                proofLat: lateData.proofLat,
+                proofLng: lateData.proofLng,
+              }
+            : {}),
+          ...(lateData.delayReason ? { delayReason: lateData.delayReason } : {}),
+        },
+        include: {
+          company: { select: { id: true, name: true } },
+          items: { include: { menuItem: true } },
+        },
+      });
     }
 
     await deductLines(tx, order.items);

@@ -23,6 +23,9 @@ const patchSchema = z.object({
   paymentStatus: z.enum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']).optional(),
   delayReason: z.string().max(1000).optional(),
   delayProof: z.string().max(400_000).optional(),
+  proofTakenAt: z.string().optional(),
+  proofLat: z.number().optional(),
+  proofLng: z.number().optional(),
 });
 
 // GET - Full order detail. Admin only: orders carry employee contact details.
@@ -86,7 +89,8 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { status, paymentStatus, delayReason, delayProof } = parsed.data;
+    const { status, paymentStatus, delayReason, delayProof, proofTakenAt, proofLat, proofLng } =
+      parsed.data;
     if (!isAdmin && paymentStatus) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -96,6 +100,9 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         const order = await applyOrderStatusStock(id, status, {
           delayReason,
           delayProof,
+          proofTakenAt,
+          proofLat,
+          proofLng,
         });
         if (paymentStatus) {
           const paid = await prisma.order.update({
