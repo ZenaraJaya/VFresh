@@ -498,3 +498,104 @@ export function defaultWeeklyHours(): WeeklyHours {
   }
   return hours;
 }
+
+export type DayHoursStatus =
+  | { status: 'open'; open: string; close: string }
+  | { status: 'closed' }
+  | { status: 'unscheduled' };
+
+export function hoursOnWeekday(
+  vendor: VendorHours,
+  weekday: number
+): DayHoursStatus {
+  const mode = resolveMode(vendor);
+  if (mode === 'CUSTOM') {
+    const weekly = asWeeklyHours(vendor.weeklyHours);
+    if (!weekly) return { status: 'unscheduled' };
+    const key = String(weekday) as (typeof DAY_KEYS)[number];
+    const day = weekly[key];
+    if (day === undefined) return { status: 'unscheduled' };
+    if (day === null) return { status: 'closed' };
+    return { status: 'open', open: day.open, close: day.close };
+  }
+  if (vendor.openTime && vendor.closeTime) {
+    return { status: 'open', open: vendor.openTime, close: vendor.closeTime };
+  }
+  return { status: 'unscheduled' };
+}
+
+function hmFromMinutes(total: number) {
+  const wrapped = ((total % (24 * 60)) + 24 * 60) % (24 * 60);
+  const hours = Math.floor(wrapped / 60);
+  const minutes = wrapped % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+function minutesAlongWindow(open: string, close: string, step = 15) {
+  const start = parseHm(open);
+  const end = parseHm(close);
+  if (start == null || end == null) return [];
+  const out: number[] = [];
+  if (start === end) {
+    for (let m = 0; m < 24 * 60; m += step) out.push(m);
+    return out;
+  }
+  if (start < end) {
+    for (let m = start; m < end; m += step) out.push(m);
+    return out;
+  }
+  for (let m = start; m < 24 * 60; m += step) out.push(m);
+  for (let m = 0; m < end; m += step) out.push(m);
+  return out;
+}
+
+function inLunchBreak(minutes: number, vendor: VendorHours) {
+  const lunch = lunchWindow(vendor);
+  if (!lunch) return false;
+  const start = parseHm(lunch.start);
+  const end = parseHm(lunch.end);
+  if (start == null || end == null) return false;
+  if (start < end) return minutes >= start && minutes < end;
+  return minutes >= start || minutes < end;
+}
+
+const FALLBACK_OPEN = '09:00';
+const FALLBACK_CLOSE = '21:00';
+
+export function deliveryTimeSlots(
+  vendors: VendorHours[],
+  weekday: number
+): string[] {
+  if (vendors.length === 0) {
+    return minutesAlongWindow(FALLBACK_OPEN, FALLBACK_CLOSE).map(hmFromMinutes);
+  }
+
+  let shared: Set<string> | null = null;
+  for (const vendor of vendors) {
+    const hours = hoursOnWeekday(vendor, weekday);
+    if (hours.status === 'closed') return [];
+    const window =
+      hours.status === 'open'
+        ? minutesAlongWindow(hours.open, hours.close)
+        : minutesAlongWindow(FALLBACK_OPEN, FALLBACK_CLOSE);
+    const slots = new Set(
+      window
+        .filter((m) => !inLunchBreak(m, vendor))
+        .map(hmFromMinutes)
+    );
+    shared = shared
+      ? new Set([...shared].filter((slot) => slots.has(slot)))
+      : slots;
+  }
+  return [...(shared ?? [])].sort();
+}
+
+export function isHmInVendorHours(
+  vendors: VendorHours[],
+  weekday: number,
+  hm: string
+) {
+  const normalized = parseHm(hm);
+  if (normalized == null) return false;
+  return deliveryTimeSlots(vendors, weekday).includes(hmFromMinutes(normalized));
+}

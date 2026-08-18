@@ -4,9 +4,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useSyncExternalStore,
 } from 'react';
+import { useSession } from 'next-auth/react';
 import type { CartLine, MenuItem } from '@/types';
 import { calculateTotals } from '@/lib/pricing';
 // Client-safe helpers only. Do not import `@/lib/daily-pack` (it pulls Prisma).
@@ -57,6 +60,19 @@ function writeLines(next: CartLine[]) {
   emitChange();
 }
 
+function toSaved(lines: CartLine[]) {
+  return lines.map((line) => ({
+    menuItemId: line.menuItem.id,
+    quantity: line.quantity,
+    notes: line.notes,
+  }));
+}
+
+let accountSync: { customerId: string; promise: Promise<void> } | null = null;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+let skipNextPersist = false;
+let persistReadyFor: string | null = null;
+
 interface CartContextValue {
   lines: CartLine[];
   /** Total number of individual units, for the header badge. */
@@ -77,6 +93,13 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession();
+  const customerId =
+    session?.user?.role === 'CUSTOMER' && session.user.id && !session.idleExpired
+      ? session.user.id
+      : null;
+  const syncedFor = useRef<string | null>(null);
+
   const raw = useSyncExternalStore(subscribe, readRaw, () => EMPTY_RAW);
   const lines = useMemo(() => parseLines(raw), [raw]);
   const hydrated = useSyncExternalStore(
@@ -92,6 +115,87 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     },
     []
   );
+
+  useEffect(() => {
+    if (status === 'loading') return;
+
+    if (!customerId) {
+      if (syncedFor.current) {
+        syncedFor.current = null;
+        if (accountSync?.customerId) accountSync = null;
+        persistReadyFor = null;
+        skipNextPersist = true;
+        writeLines([]);
+      }
+      return;
+    }
+
+    if (syncedFor.current === customerId) return;
+    if (persistReadyFor === customerId) {
+      syncedFor.current = customerId;
+      return;
+    }
+    syncedFor.current = customerId;
+
+    if (accountSync?.customerId === customerId) {
+      void accountSync.promise;
+      return;
+    }
+
+    const guest = toSaved(parseLines(readRaw()));
+    accountSync = {
+      customerId,
+      promise: fetch('/api/account/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lines: guest }),
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            if (syncedFor.current === customerId) syncedFor.current = null;
+            if (accountSync?.customerId === customerId) accountSync = null;
+            return;
+          }
+          const data = (await res.json().catch(() => null)) as {
+            lines?: CartLine[];
+          } | null;
+          if (!Array.isArray(data?.lines)) {
+            if (syncedFor.current === customerId) syncedFor.current = null;
+            if (accountSync?.customerId === customerId) accountSync = null;
+            return;
+          }
+          skipNextPersist = true;
+          persistReadyFor = customerId;
+          writeLines(data.lines);
+        })
+        .catch(() => {
+          if (syncedFor.current === customerId) syncedFor.current = null;
+          if (accountSync?.customerId === customerId) accountSync = null;
+        })
+        .then(() => undefined),
+    };
+
+    void accountSync.promise;
+  }, [customerId, status]);
+
+  useEffect(() => {
+    if (!customerId || persistReadyFor !== customerId) return;
+    if (skipNextPersist) {
+      skipNextPersist = false;
+      return;
+    }
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+      void fetch('/api/account/cart', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lines: toSaved(parseLines(readRaw())) }),
+      }).catch(() => undefined);
+    }, 400);
+    return () => {
+      if (persistTimer) clearTimeout(persistTimer);
+    };
+  }, [customerId, raw]);
 
   const addItem = useCallback((item: MenuItem, quantity = 1, notes?: string) => {
     const prev = parseLines(readRaw());

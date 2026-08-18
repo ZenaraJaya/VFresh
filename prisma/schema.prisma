@@ -130,6 +130,8 @@ model Customer {
   cardLast4       String?
   cardExpMonth    Int?
   cardExpYear     Int?
+  /// Saved storefront cart: [{ menuItemId, quantity, notes }]
+  cart            Json           @default("[]")
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 

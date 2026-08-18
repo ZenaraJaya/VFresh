@@ -44,12 +44,16 @@ export default async function AccountInvoicesPage() {
       {!companyId ? (
         <EmptyState
           title="No company on this account"
-          body="Join with a staff link or register the company from the sign-up page."
+          body="Register your workplace from Profile so invoices can be sent to the company billing email."
         />
       ) : invoices.length === 0 ? (
         <EmptyState
           title="No invoices yet"
-          body="Company-account orders go on this month’s bill."
+          body={
+            me?.company?.status === 'APPROVED'
+              ? `Company-account orders for ${me.company.name} go on this month’s bill, emailed to ${me.company.billingEmail}.`
+              : 'After an admin approves the company, invoices are emailed to the billing address saved on Profile.'
+          }
         />
       ) : (
         <SectionCard title="Statements">

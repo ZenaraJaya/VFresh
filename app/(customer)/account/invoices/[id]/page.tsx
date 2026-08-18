@@ -31,7 +31,14 @@ export default async function AccountInvoiceDetailPage({
   const invoice = await prisma.invoice.findFirst({
     where: { id, companyId, status: { in: ['SENT', 'PAID', 'OVERDUE'] } },
     include: {
-      company: { select: { name: true } },
+      company: {
+        select: {
+          name: true,
+          billingEmail: true,
+          billingAddress: true,
+          phone: true,
+        },
+      },
       orders: {
         orderBy: { deliveryDate: 'asc' },
         include: {
@@ -67,6 +74,14 @@ export default async function AccountInvoiceDetailPage({
             {formatMYR(invoice.totalAmount)}
           </p>
           <p className="mt-1 text-sm text-neutral-500">Due {ymd(invoice.dueDate)}</p>
+          <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-400">
+            Billed to {invoice.company.name}
+            {invoice.company.billingEmail ? ` · ${invoice.company.billingEmail}` : ''}
+            {invoice.company.phone ? ` · ${invoice.company.phone}` : ''}
+            {invoice.company.billingAddress
+              ? ` · ${invoice.company.billingAddress}`
+              : ''}
+          </p>
         </div>
         <StatusBadge tone={invoiceTone(invoice.status)}>
           {INVOICE_LABEL[invoice.status] ?? invoice.status}

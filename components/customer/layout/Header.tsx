@@ -9,6 +9,7 @@ import ScrollToHash from './ScrollToHash';
 import HomeHashLink from './HomeHashLink';
 import CartSidebar from '@/components/customer/cart/CartSidebar';
 import { useCart } from '@/context/CartContext';
+import { lockBodyScroll } from '@/lib/body-scroll-lock';
 
 const LG = 1024;
 
@@ -22,6 +23,7 @@ export default function Header() {
 
   useEffect(() => {
     closeMenu();
+    setCartOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -38,7 +40,11 @@ export default function Header() {
       if (e.key === 'Escape') closeMenu();
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    const unlock = lockBodyScroll();
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      unlock();
+    };
   }, [mobileOpen]);
 
   return (

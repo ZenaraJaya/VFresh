@@ -5,13 +5,17 @@ import { prisma } from '@/lib/db';
 import { storefrontWhere } from '@/lib/public-menu';
 import { authOptions } from '@/lib/auth';
 import { calculateTotals, toMoney } from '@/lib/pricing';
-import { isVendorAcceptingOrders, isVendorOnLunchBreak } from '@/lib/vendor-availability';
+import {
+  isHmInVendorHours,
+  isVendorAcceptingOrders,
+  isVendorOnLunchBreak,
+} from '@/lib/vendor-availability';
 import { assertSellableForCheckout } from '@/lib/daily-pack';
 import { newOrderNumber } from '@/lib/order-number';
 import { createStandingOrders } from '@/lib/standing-orders';
 import { isCompanyUsable } from '@/lib/company';
 import { normalizeMyPhone } from '@/lib/phone';
-import { deliveryTrackPayload } from '@/lib/delivery-sla';
+import { deliveryTrackPayload, isDeliveryTooSoon } from '@/lib/delivery-sla';
 
 const orderSchema = z.object({
   companyId: z.string().min(1),
@@ -21,7 +25,7 @@ const orderSchema = z.object({
   department: z.string().max(120).optional().or(z.literal('')),
   deliveryLocation: z.string().min(1).max(240),
   deliveryDate: z.string().min(1),
-  deliveryTime: z.string().max(40).optional().or(z.literal('')),
+  deliveryTime: z.string().min(1).max(40),
   specialInstructions: z.string().max(1000).optional().or(z.literal('')),
   paymentMethod: z.enum(['COMPANY_ACCOUNT', 'CREDIT_CARD']).default('COMPANY_ACCOUNT'),
   repeatWeekly: z.boolean().optional(),
@@ -137,6 +141,29 @@ export async function POST(req: NextRequest) {
       const list = byVendor.get(key) ?? [];
       list.push(item);
       byVendor.set(key, list);
+    }
+
+    const kitchenVendors = [...byVendor.values()].map((items) => items[0].vendor!);
+    const [year, month, day] = data.deliveryDate.split('-').map(Number);
+    const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+    if (!isHmInVendorHours(kitchenVendors, weekday, data.deliveryTime)) {
+      return NextResponse.json(
+        {
+          error:
+            'Pick a delivery time during the kitchen’s open hours for that date',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (isDeliveryTooSoon(data.deliveryDate, data.deliveryTime)) {
+      return NextResponse.json(
+        {
+          error:
+            'Delivery must be at least 1 hour 30 minutes from now so the kitchen can prepare and arrive on time',
+        },
+        { status: 400 }
+      );
     }
 
     for (const items of byVendor.values()) {

@@ -3,10 +3,12 @@
 import { SessionProvider } from 'next-auth/react';
 import { Toaster } from 'react-hot-toast';
 import { CartProvider } from '@/context/CartContext';
+import SessionIdleGuard from '@/components/auth/SessionIdleGuard';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
+    <SessionProvider refetchInterval={0} refetchOnWindowFocus>
+      <SessionIdleGuard />
       <CartProvider>
         {children}
         <Toaster

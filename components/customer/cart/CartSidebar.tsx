@@ -7,6 +7,7 @@ import CartItem from './CartItem';
 import CheckoutLink from '@/components/customer/auth/CheckoutLink';
 import { useCart } from '@/context/CartContext';
 import { formatMYR } from '@/lib/pricing';
+import { lockBodyScroll } from '@/lib/body-scroll-lock';
 
 interface CartSidebarProps {
   open: boolean;
@@ -25,12 +26,11 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
     };
     document.addEventListener('keydown', onKey);
 
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockBodyScroll();
 
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = previous;
+      unlock();
     };
   }, [open, onClose]);
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +15,15 @@ import type { PaymentMethod } from '@/types';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
 import PhoneInput from '@/components/shared/ui/PhoneInput';
 import { weekdayName } from '@/lib/miri-date';
+import {
+  DAY_LABELS,
+  deliveryTimeSlots,
+  formatHmLabel,
+  formatVendorSchedule,
+  hoursOnWeekday,
+  type VendorHours,
+} from '@/lib/vendor-availability';
+import { isDeliveryTooSoon } from '@/lib/delivery-sla';
 
 const schema = z.object({
   companyId: z.string().min(1, 'Select your company'),
@@ -24,7 +33,7 @@ const schema = z.object({
   department: z.string().max(120).optional(),
   deliveryLocation: z.string().min(1, 'Where should we deliver?'),
   deliveryDate: z.string().min(1, 'Pick a date'),
-  deliveryTime: z.string().optional(),
+  deliveryTime: z.string().min(1, 'Pick a delivery time'),
   specialInstructions: z.string().max(1000).optional(),
   repeatWeekly: z.boolean().optional(),
 });
@@ -45,6 +54,17 @@ function weekdayFromYmd(ymd?: string) {
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
+function cartVendors(lines: { menuItem: { vendor?: VendorHours | null } }[]) {
+  const seen = new Map<string, VendorHours & { businessName?: string }>();
+  for (const line of lines) {
+    const vendor = line.menuItem.vendor;
+    const id = vendor && 'id' in vendor ? String((vendor as { id?: string }).id ?? '') : '';
+    const key = id || JSON.stringify(vendor ?? {});
+    if (vendor && !seen.has(key)) seen.set(key, vendor);
+  }
+  return [...seen.values()];
+}
+
 export default function CheckoutForm() {
   const router = useRouter();
   const { lines, clear } = useCart();
@@ -63,6 +83,7 @@ export default function CheckoutForm() {
     handleSubmit,
     watch,
     setValue,
+    getValues,
     formState: { errors }
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -108,9 +129,15 @@ export default function CheckoutForm() {
               : [profile.company, ...prev]
           );
         }
+        const address = [profile.billingAddress, profile.billingCity]
+          .filter((part: unknown) => typeof part === 'string' && part.trim())
+          .join(', ');
+        if (address && !getValues('deliveryLocation')) {
+          setValue('deliveryLocation', address);
+        }
       })
       .catch(() => {});
-  }, [session, setValue]);
+  }, [session, setValue, getValues]);
 
   const linkedCompany = companies.find((c) => c.id === ownCompanyId);
   const companyInvoiceEnabled =
@@ -122,8 +149,47 @@ export default function CheckoutForm() {
     }
   }, [companyInvoiceEnabled, paymentMethod]);
   const deliveryDate = watch('deliveryDate');
+  const deliveryTime = watch('deliveryTime');
   const repeatWeekly = watch('repeatWeekly');
   const deliveryWeekday = weekdayFromYmd(deliveryDate);
+  const vendors = useMemo(() => cartVendors(lines), [lines]);
+
+  const closedVendors = useMemo(
+    () =>
+      vendors.filter(
+        (vendor) => hoursOnWeekday(vendor, deliveryWeekday).status === 'closed'
+      ),
+    [vendors, deliveryWeekday]
+  );
+
+  const allSlots = useMemo(
+    () => deliveryTimeSlots(vendors, deliveryWeekday),
+    [vendors, deliveryWeekday]
+  );
+
+  const timeSlots = useMemo(() => {
+    if (!deliveryDate) return allSlots;
+    return allSlots.filter(
+      (slot) => !isDeliveryTooSoon(deliveryDate, slot)
+    );
+  }, [allSlots, deliveryDate]);
+
+  useEffect(() => {
+    if (timeSlots.length === 0) {
+      if (deliveryTime) setValue('deliveryTime', '');
+      return;
+    }
+    if (!deliveryTime || !timeSlots.includes(deliveryTime)) {
+      setValue('deliveryTime', timeSlots[0]);
+    }
+  }, [deliveryTime, setValue, timeSlots]);
+
+  useEffect(() => {
+    if (ownCompanyId || getValues('companyId')) return;
+    const first =
+      companies.find((row) => row.status === 'APPROVED') ?? companies[0];
+    if (first) setValue('companyId', first.id);
+  }, [companies, getValues, ownCompanyId, setValue]);
 
   useEffect(() => {
     fetch('/api/companies')
@@ -357,22 +423,51 @@ export default function CheckoutForm() {
               htmlFor="deliveryTime"
               className="mb-1 block text-sm font-medium"
             >
-              Preferred window
+              Delivery time
+              <RequiredMark />
             </label>
-            <select
-              id="deliveryTime"
-              {...register('deliveryTime')}
-              className={inputClass}
-            >
-              <option value="">No preference</option>
-              <option value="11:30 - 12:00">11:30 – 12:00</option>
-              <option value="12:00 - 12:30">12:00 – 12:30</option>
-              <option value="12:30 - 13:00">12:30 – 13:00</option>
-            </select>
-            <p className="mt-1 text-xs text-neutral-500">
-              After the rider picks up, they have 1 hour to arrive. If later,
-              they must explain with a photo.
-            </p>
+            {timeSlots.length > 0 ? (
+              <select
+                id="deliveryTime"
+                {...register('deliveryTime')}
+                className={inputClass}
+              >
+                {timeSlots.map((slot) => (
+                  <option key={slot} value={slot}>
+                    {formatHmLabel(slot)}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className={`${inputClass} bg-neutral-50 text-sm text-neutral-600 dark:bg-neutral-900 dark:text-neutral-300`}>
+                {closedVendors.length > 0
+                  ? `${closedVendors
+                      .map((vendor) => vendor.businessName || 'This kitchen')
+                      .join(', ')} ${
+                      closedVendors.length === 1 ? 'is' : 'are'
+                    } closed on ${DAY_LABELS[deliveryWeekday]}. Pick another date.`
+                  : allSlots.length > 0
+                    ? `Delivery needs at least 1 hour 30 minutes from now so the kitchen can prepare and arrive on time. Pick a later time or date.`
+                    : 'No open hours for this kitchen on that date.'}
+              </p>
+            )}
+            {errors.deliveryTime && (
+              <p className={errorClass}>{errors.deliveryTime.message}</p>
+            )}
+            {vendors.length > 0 ? (
+              <p className="mt-1 text-xs text-neutral-500">
+                {(vendors.length === 1
+                  ? formatVendorSchedule(vendors[0])
+                  : 'Times shown are when every kitchen in your cart is open.') ||
+                  'Times follow this kitchen’s open hours.'}{' '}
+                Earliest delivery is 1 hour 30 minutes from now.
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-neutral-500">
+                Earliest delivery is 1 hour 30 minutes from now so the kitchen
+                can prepare and arrive on time.
+              </p>
+            )}
           </div>
         </div>
 
@@ -425,7 +520,7 @@ export default function CheckoutForm() {
 
       <button
         type="submit"
-        disabled={submitting || lines.length === 0}
+        disabled={submitting || lines.length === 0 || timeSlots.length === 0}
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-3.5 font-medium text-white transition hover:bg-emerald-600 disabled:opacity-60"
       >
         {submitting && <Loader2 className="h-4 w-4 animate-spin" />}

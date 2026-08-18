@@ -87,8 +87,8 @@ export default async function AccountProfilePage() {
               </p>
               {me.company.status === 'PENDING' ? (
                 <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-                  Waiting for admin review. You can create a staff link after
-                  the company is approved.
+                  Saved for review. After an admin approves the company,
+                  invoices are emailed to {me.company.billingEmail}.
                 </p>
               ) : null}
               {me.company.status === 'REJECTED' ? (
@@ -125,6 +125,39 @@ export default async function AccountProfilePage() {
                 <p className="mt-4 text-xs text-neutral-500">
                   Ask {first?.name || 'your HR or manager'} for a staff link.
                 </p>
+              )}
+              {isOwner ? (
+                <div className="mt-6 border-t border-neutral-100 pt-5 dark:border-neutral-800">
+                  <h3 className="mb-3 text-sm font-semibold">
+                    Invoice billing details
+                  </h3>
+                  <RegisterCompanyForm
+                    key={`${me.company.id}-${me.company.billingEmail}`}
+                    defaultJobTitle={me.jobTitle ?? ''}
+                    company={{
+                      id: me.company.id,
+                      name: me.company.name,
+                      billingEmail: me.company.billingEmail,
+                      billingAddress: me.company.billingAddress,
+                      phone: me.company.phone,
+                    }}
+                  />
+                </div>
+              ) : (
+                <dl className="mt-4 grid gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+                  <div>
+                    <dt className="text-xs text-neutral-500">Billing email</dt>
+                    <dd>{me.company.billingEmail}</dd>
+                  </div>
+                  {me.company.billingAddress ? (
+                    <div>
+                      <dt className="text-xs text-neutral-500">
+                        Billing address
+                      </dt>
+                      <dd>{me.company.billingAddress}</dd>
+                    </div>
+                  ) : null}
+                </dl>
               )}
             </>
           )}

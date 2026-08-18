@@ -3,6 +3,8 @@ import 'next-auth/jwt';
 
 declare module 'next-auth' {
   interface Session {
+    idleExpired?: boolean;
+    lastActivity?: number;
     user: {
       id: string;
       role: string;
@@ -26,5 +28,7 @@ declare module 'next-auth/jwt' {
     role?: string;
     vendorStatus?: string;
     companyId?: string;
+    lastActivity?: number;
+    idleExpired?: boolean;
   }
 }

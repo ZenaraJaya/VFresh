@@ -5,13 +5,20 @@ import { authSecret, ensureAuthUrl } from '@/lib/auth-env';
 import { findCourierByEmail, findCourierById } from '@/lib/courier-lookup';
 import { credentialValue } from '@/lib/demo-accounts';
 import { verifyStoredOrDemoPassword } from '@/lib/demo-password';
+import { SESSION_IDLE_SECONDS } from '@/lib/session-idle';
 
 ensureAuthUrl();
+
+function unixNow() {
+  return Math.floor(Date.now() / 1000);
+}
 
 export const authOptions: NextAuthOptions = {
   secret: authSecret(),
   session: {
     strategy: 'jwt',
+    maxAge: SESSION_IDLE_SECONDS,
+    updateAge: SESSION_IDLE_SECONDS,
   },
   pages: {
     signIn: '/login',
@@ -123,6 +130,8 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user, trigger, session }) {
+      const now = unixNow();
+
       if (user) {
         const u = user as {
           role?: string;
@@ -132,6 +141,18 @@ export const authOptions: NextAuthOptions = {
         if (u.role) token.role = u.role;
         token.vendorStatus = u.vendorStatus;
         token.companyId = u.companyId;
+        token.lastActivity = now;
+        token.idleExpired = false;
+      } else if (trigger === 'update') {
+        token.lastActivity = now;
+        token.idleExpired = false;
+      } else if (
+        typeof token.lastActivity === 'number' &&
+        now - token.lastActivity > SESSION_IDLE_SECONDS
+      ) {
+        token.idleExpired = true;
+      } else if (typeof token.lastActivity !== 'number') {
+        token.lastActivity = now;
       }
 
       if (
@@ -149,6 +170,10 @@ export const authOptions: NextAuthOptions = {
 
       // Refresh rider profile only for rider sessions. Looking up every
       // token.sub in `couriers` was flipping shoppers onto /delivery.
+      if (token.idleExpired) {
+        return token;
+      }
+
       if (token.role === 'DELIVERY' && token.sub) {
         try {
           const courier = await findCourierById(token.sub);
@@ -193,6 +218,14 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      if (token.idleExpired) {
+        session.idleExpired = true;
+        session.expires = new Date(0).toISOString();
+        return session;
+      }
+      if (typeof token.lastActivity === 'number') {
+        session.lastActivity = token.lastActivity;
+      }
       if (session.user) {
         session.user.id = token.sub ?? '';
         session.user.role = (token.role as string) ?? 'CUSTOMER';

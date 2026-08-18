@@ -10,7 +10,7 @@ if (process.env.VERCEL) {
 }
 
 /** Bump when Prisma models change so HMR drops a stale Prisma singleton. */
-const PRISMA_CLIENT_REV = 21;
+const PRISMA_CLIENT_REV = 22;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -115,6 +115,7 @@ function clientLooksCurrent(client: PrismaClient) {
     fields.includes('billingName') &&
     fields.includes('paymentMethod') &&
     fields.includes('companyRole') &&
+    fields.includes('cart') &&
     companyFields.includes('status') &&
     orderFields.includes('courierId') &&
     orderFields.includes('pickedUpAt') &&

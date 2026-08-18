@@ -1,6 +1,9 @@
 import { ymdFromValue } from '@/lib/miri-date';
 
 export const DELIVERY_SLA_MS = 60 * 60 * 1000;
+/** Kitchen + rider need this much notice before the booked receive time. */
+export const MIN_DELIVERY_LEAD_MS = 90 * 60 * 1000;
+export const MIN_DELIVERY_LEAD_MINUTES = 90;
 export const DELAY_REASON_MIN = 10;
 const MAX_PROOF_LENGTH = 400_000;
 
@@ -45,6 +48,21 @@ export function promisedReceiveAt(
   const ymd = ymdFromValue(deliveryDate);
   const hm = windowEndHm(deliveryTime) ?? '12:00';
   return new Date(`${ymd}T${hm}:00+08:00`);
+}
+
+export function earliestDeliveryAt(from = new Date()) {
+  return new Date(from.getTime() + MIN_DELIVERY_LEAD_MS);
+}
+
+export function isDeliveryTooSoon(
+  deliveryDate: Date | string,
+  deliveryTime?: string | null,
+  now = new Date()
+) {
+  return (
+    promisedReceiveAt(deliveryDate, deliveryTime).getTime() <
+    earliestDeliveryAt(now).getTime()
+  );
 }
 
 export function clockStartAt(order: DeliveryClockOrder) {

@@ -10,7 +10,7 @@ export default function StorefrontCart({
   children: React.ReactNode;
 }) {
   return (
-    <SessionProvider>
+    <SessionProvider refetchInterval={0} refetchOnWindowFocus>
       <CartProvider>{children}</CartProvider>
     </SessionProvider>
   );
