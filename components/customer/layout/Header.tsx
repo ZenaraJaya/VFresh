@@ -20,6 +20,10 @@ export default function Header() {
   const [cartOpen, setCartOpen] = useState(false);
 
   const closeMenu = () => setMobileOpen(false);
+  const openCart = () => {
+    closeMenu();
+    setCartOpen(true);
+  };
 
   useEffect(() => {
     closeMenu();
@@ -47,17 +51,19 @@ export default function Header() {
     };
   }, [mobileOpen]);
 
+  const cartCount = hydrated ? count : 0;
+
   return (
     <>
       <ScrollToHash />
       <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/85 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/85">
-        <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
           <HomeHashLink
             hash="home"
             onNavigate={closeMenu}
-            className="flex items-center gap-2"
+            className="flex min-w-0 items-center gap-2"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 text-white">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
               <Leaf className="h-5 w-5" />
             </span>
             <span className="text-lg font-bold tracking-tight">VFresh</span>
@@ -65,22 +71,20 @@ export default function Header() {
 
           <Navigation />
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => {
-                closeMenu();
-                setCartOpen(true);
-              }}
-              aria-label="Open cart"
-              className="relative rounded-xl p-2 transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              onClick={openCart}
+              aria-label={cartCount > 0 ? `Open cart, ${cartCount} items` : 'Open cart'}
+              className="relative inline-flex h-10 items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-3 text-sm font-medium transition hover:border-emerald-300 hover:bg-emerald-50 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800"
             >
-              <ShoppingBag className="h-5 w-5" />
-              {hydrated && count > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[11px] font-bold text-white">
-                  {count}
+              <ShoppingBag className="h-4 w-4 text-emerald-600" />
+              <span className="hidden sm:inline">Cart</span>
+              {cartCount > 0 ? (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1.5 text-[11px] font-bold text-white">
+                  {cartCount}
                 </span>
-              )}
+              ) : null}
             </button>
 
             <HeaderAuth />
@@ -94,37 +98,72 @@ export default function Header() {
 
             <button
               type="button"
-              onClick={() => setMobileOpen((v) => !v)}
-              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
               aria-expanded={mobileOpen}
-              className="rounded-xl p-2 transition hover:bg-neutral-100 lg:hidden dark:hover:bg-neutral-800"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-white transition hover:bg-neutral-100 lg:hidden dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800"
             >
-              {mobileOpen ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <MenuIcon className="h-5 w-5" />
-              )}
+              <MenuIcon className="h-5 w-5" />
             </button>
           </div>
-
-          {mobileOpen ? (
-            <div className="lg:hidden">
-              <button
-                type="button"
-                aria-label="Close menu"
-                className="fixed inset-x-0 top-16 bottom-0 z-40 bg-black/25"
-                onClick={closeMenu}
-              />
-              <div className="absolute right-4 top-full z-50 mt-2 w-[min(17.5rem,calc(100vw-2rem))] rounded-2xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-800 dark:bg-neutral-950">
-                <Navigation vertical onNavigate={closeMenu} />
-                <div className="mt-1 border-t border-neutral-200 p-2 dark:border-neutral-800">
-                  <HeaderAuthMobile onNavigate={closeMenu} />
-                </div>
-              </div>
-            </div>
-          ) : null}
         </div>
       </header>
+
+      {mobileOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Close menu"
+            className="absolute inset-0 bg-black/50"
+            onClick={closeMenu}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-menu-title"
+            className="absolute inset-y-0 right-0 flex w-[min(20rem,100%)] flex-col bg-white shadow-2xl dark:bg-neutral-950"
+          >
+            <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+              <h2 id="mobile-menu-title" className="text-base font-semibold">
+                Menu
+              </h2>
+              <button
+                type="button"
+                onClick={closeMenu}
+                aria-label="Close menu"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 transition hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3">
+              <Navigation vertical onNavigate={closeMenu} />
+            </div>
+
+            <div className="space-y-2 border-t border-neutral-200 p-3 dark:border-neutral-800">
+              <button
+                type="button"
+                onClick={openCart}
+                className="flex w-full items-center justify-between rounded-xl border border-neutral-200 px-4 py-3 text-sm font-semibold transition hover:border-emerald-300 hover:bg-emerald-50 dark:border-neutral-700 dark:hover:bg-emerald-950/40"
+              >
+                <span className="flex items-center gap-2">
+                  <ShoppingBag className="h-4 w-4 text-emerald-600" />
+                  Cart
+                </span>
+                {cartCount > 0 ? (
+                  <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-emerald-500 px-2 text-xs font-bold text-white">
+                    {cartCount}
+                  </span>
+                ) : (
+                  <span className="text-xs font-medium text-neutral-400">Empty</span>
+                )}
+              </button>
+              <HeaderAuthMobile onNavigate={closeMenu} />
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <CartSidebar open={cartOpen} onClose={() => setCartOpen(false)} />
     </>
