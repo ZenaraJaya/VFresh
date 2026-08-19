@@ -1,3 +1,5 @@
+import { miriMinutesNow, miriWeekday } from '@/lib/miri-date';
+
 export type ScheduleMode = 'NONE' | 'RANGE' | 'EVERYDAY' | 'CUSTOM';
 
 export type DayHours = { open: string; close: string } | null;
@@ -115,7 +117,7 @@ export function isWithinDailyWindow(
   open: string,
   close: string
 ): boolean {
-  const mins = now.getHours() * 60 + now.getMinutes();
+  const mins = miriMinutesNow(now);
   const o = parseHm(open);
   const c = parseHm(close);
   if (o == null || c == null) return false;
@@ -212,7 +214,7 @@ export function isVendorAcceptingOrders(vendor: VendorHours) {
   if (mode === 'CUSTOM') {
     const weekly = asWeeklyHours(vendor.weeklyHours);
     if (!weekly) return Boolean(vendor.isOpen);
-    const key = String(now.getDay()) as (typeof DAY_KEYS)[number];
+    const key = String(miriWeekday(now)) as (typeof DAY_KEYS)[number];
     const day = weekly[key];
     if (day === undefined) return Boolean(vendor.isOpen);
     if (day === null) return false;
@@ -232,7 +234,7 @@ export function vendorOpenStateLabel(vendor: VendorHours): {
   label: string;
   detail: string | null;
 } {
-  const accepting = isVendorAcceptingOrders({ ...vendor, status: 'APPROVED' });
+  const accepting = isVendorAcceptingOrders(vendor);
   const follow = vendor.followSchedule !== false;
   const mode = resolveMode(vendor);
   const lunch = formatLunchLabel(vendor);
@@ -256,7 +258,7 @@ export function vendorOpenStateLabel(vendor: VendorHours): {
 
   if (mode === 'CUSTOM') {
     const weekly = asWeeklyHours(vendor.weeklyHours);
-    const key = String(new Date().getDay()) as (typeof DAY_KEYS)[number];
+    const key = String(miriWeekday()) as (typeof DAY_KEYS)[number];
     const day = weekly?.[key];
     if (day === null) {
       return {
@@ -330,7 +332,7 @@ export function vendorClosedLabel(vendor: VendorHours) {
   if (mode === 'CUSTOM') {
     const weekly = asWeeklyHours(vendor.weeklyHours);
     if (weekly) {
-      const key = String(new Date().getDay()) as (typeof DAY_KEYS)[number];
+      const key = String(miriWeekday()) as (typeof DAY_KEYS)[number];
       const day = weekly[key];
       if (day === null) return `Closed today (${DAY_LABELS[Number(key)]})`;
       if (day) {

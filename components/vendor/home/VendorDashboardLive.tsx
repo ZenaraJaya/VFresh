@@ -56,7 +56,20 @@ export default function VendorDashboardLive() {
   }, 4000);
 
   const onOpenSync = useCallback((accepting: boolean) => {
-    setLive((prev) => (prev ? { ...prev, accepting } : prev));
+    setLive((prev) =>
+      prev
+        ? { ...prev, accepting, onLunch: accepting ? false : prev.onLunch }
+        : {
+            accepting,
+            onLunch: false,
+            address: null,
+            menuCount: 0,
+            availableCount: 0,
+            newOrders: 0,
+            delayedDeliveries: 0,
+            recentOrders: [],
+          }
+    );
   }, []);
   useVendorOpenSync(onOpenSync);
 

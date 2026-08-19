@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { isVendorAcceptingOrders, isVendorOnLunchBreak } from '@/lib/vendor-availability';
+import type { WeeklyHours } from '@/lib/vendor-availability';
 import { materializeStandingOrders } from '@/lib/standing-orders';
 import { compareDeliveryPriority } from '@/lib/order-priority';
 import { isDeliveryLate } from '@/lib/delivery-sla';
@@ -56,7 +57,10 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    accepting: isVendorAcceptingOrders(vendor),
+    accepting: isVendorAcceptingOrders({
+      ...vendor,
+      weeklyHours: vendor.weeklyHours as WeeklyHours | null,
+    }),
     onLunch: isVendorOnLunchBreak(vendor),
     address: vendor.address,
     slug: vendor.slug,
