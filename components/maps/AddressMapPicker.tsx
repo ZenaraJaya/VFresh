@@ -1,16 +1,14 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { Check, Loader2, MapPin, Navigation } from 'lucide-react';
+import { useState } from 'react';
+import { Check, Loader2, Navigation } from 'lucide-react';
 import {
-  MAP_EMBED_DELTA,
-  MIRI_CENTER,
   confirmDeliveryAddress,
-  mapsEmbedUrl,
   reverseGeocode,
   searchPlaces,
   type GeoHit,
 } from '@/lib/maps';
+import DraggablePinMap from '@/components/maps/DraggablePinMap';
 
 export default function AddressMapPicker({
   address,
@@ -30,34 +28,15 @@ export default function AddressMapPicker({
     confirmed: boolean;
   }) => void;
 }) {
-  const mapBox = useRef<HTMLDivElement>(null);
-  const drag = useRef<{
-    pointerId: number;
-    startX: number;
-    startY: number;
-  } | null>(null);
-
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<GeoHit[]>([]);
   const [busy, setBusy] = useState(false);
-  const [dragging, setDragging] = useState(false);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [view, setView] = useState({
-    lat: lat ?? MIRI_CENTER.lat,
-    lng: lng ?? MIRI_CENTER.lng,
-  });
-
-  const showLat = lat ?? view.lat;
-  const showLng = lng ?? view.lng;
-  const hasPin = lat != null && lng != null;
 
   const writeLocation = async (
     nextLat: number,
     nextLng: number,
     nextAddress?: string
   ) => {
-    setView({ lat: nextLat, lng: nextLng });
-    setOffset({ x: 0, y: 0 });
     const label =
       nextAddress?.trim() ||
       (await reverseGeocode(nextLat, nextLng)) ||
@@ -86,7 +65,7 @@ export default function AddressMapPicker({
 
   const useHere = () => {
     if (!navigator.geolocation) {
-      window.alert('Location is not available. Search, then drag the pin.');
+      window.alert('Location is not available. Drag the pin on the map instead.');
       return;
     }
     setBusy(true);
@@ -97,48 +76,22 @@ export default function AddressMapPicker({
       },
       () => {
         setBusy(false);
-        window.alert('Could not read your location. Search, then drag the pin.');
+        window.alert('Could not read your location. Drag the pin on the map instead.');
       },
       { enableHighAccuracy: true, timeout: 12_000 }
     );
   };
 
-  const finishDrag = async (clientX: number, clientY: number) => {
-    const start = drag.current;
-    const box = mapBox.current;
-    drag.current = null;
-    setDragging(false);
-    if (!start || !box) {
-      setOffset({ x: 0, y: 0 });
-      return;
-    }
-    const rect = box.getBoundingClientRect();
-    const dx = clientX - start.startX;
-    const dy = clientY - start.startY;
-    if (Math.abs(dx) < 3 && Math.abs(dy) < 3) {
-      setOffset({ x: 0, y: 0 });
-      return;
-    }
-    const nextLng = showLng + (dx / rect.width) * (MAP_EMBED_DELTA * 2);
-    const nextLat = showLat - (dy / rect.height) * (MAP_EMBED_DELTA * 2);
-    setBusy(true);
-    try {
-      await writeLocation(nextLat, nextLng);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const askConfirm = () => {
-    if (!hasPin) {
+    if (lat == null || lng == null) {
       window.alert('Drag the pin to your place first, then confirm the address.');
       return;
     }
-    const ok = confirmDeliveryAddress(address, showLat, showLng);
+    const ok = confirmDeliveryAddress(address, lat, lng);
     onChange({
       address,
-      lat: showLat,
-      lng: showLng,
+      lat,
+      lng,
       confirmed: ok,
     });
   };
@@ -195,60 +148,16 @@ export default function AddressMapPicker({
         </ul>
       ) : null}
 
-      <div
-        ref={mapBox}
-        className="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700"
-      >
-        <iframe
-          title="Delivery map"
-          src={mapsEmbedUrl(showLat, showLng)}
-          className="pointer-events-none h-56 w-full"
-          loading="eager"
-        />
-        {dragging ? (
-          <div className="absolute inset-0 z-10" />
-        ) : null}
-        <button
-          type="button"
-          aria-label="Drag pin to the delivery place"
-          className="absolute left-1/2 top-1/2 z-20 flex h-12 w-12 cursor-grab touch-none items-center justify-center rounded-full text-emerald-600 active:cursor-grabbing"
-          style={{
-            transform: `translate(calc(-50% + ${offset.x}px), calc(-85% + ${offset.y}px))`,
-          }}
-          onPointerDown={(e) => {
-            e.currentTarget.setPointerCapture(e.pointerId);
-            drag.current = {
-              pointerId: e.pointerId,
-              startX: e.clientX,
-              startY: e.clientY,
-            };
-            setDragging(true);
-            setOffset({ x: 0, y: 0 });
-          }}
-          onPointerMove={(e) => {
-            if (!drag.current || drag.current.pointerId !== e.pointerId) return;
-            setOffset({
-              x: e.clientX - drag.current.startX,
-              y: e.clientY - drag.current.startY,
-            });
-          }}
-          onPointerUp={(e) => {
-            e.currentTarget.releasePointerCapture(e.pointerId);
-            void finishDrag(e.clientX, e.clientY);
-          }}
-          onPointerCancel={(e) => {
-            e.currentTarget.releasePointerCapture(e.pointerId);
-            drag.current = null;
-            setDragging(false);
-            setOffset({ x: 0, y: 0 });
-          }}
-        >
-          <MapPin className="h-10 w-10 drop-shadow-md" fill="currentColor" />
-        </button>
-      </div>
+      <DraggablePinMap
+        lat={lat}
+        lng={lng}
+        onPin={(next) => {
+          void writeLocation(next.lat, next.lng);
+        }}
+      />
 
       <p className="text-xs text-neutral-500">
-        Drag the green pin to the door. The address fills in automatically, then tap Confirm address.
+        Drag the green pin onto the door. The address fills in when you drop it, then tap Confirm address.
       </p>
       <button
         type="button"
