@@ -2,12 +2,9 @@
 
 import { useState } from 'react';
 import { Check, Loader2, Navigation } from 'lucide-react';
-import {
-  confirmDeliveryAddress,
-  reverseGeocode,
-  searchPlaces,
-  type GeoHit,
-} from '@/lib/maps';
+import toast from 'react-hot-toast';
+import { reverseGeocode, searchPlaces, type GeoHit } from '@/lib/maps';
+import ConfirmAddressDialog from '@/components/maps/confirm-address-toast';
 import DraggablePinMap from '@/components/maps/DraggablePinMap';
 
 export default function AddressMapPicker({
@@ -30,7 +27,7 @@ export default function AddressMapPicker({
 }) {
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<GeoHit[]>([]);
-  const [busy, setBusy] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const writeLocation = async (
     nextLat: number,
@@ -65,7 +62,7 @@ export default function AddressMapPicker({
 
   const useHere = () => {
     if (!navigator.geolocation) {
-      window.alert('Location is not available. Drag the pin on the map instead.');
+      toast.error('Location is not available. Drag the pin on the map instead.');
       return;
     }
     setBusy(true);
@@ -76,7 +73,7 @@ export default function AddressMapPicker({
       },
       () => {
         setBusy(false);
-        window.alert('Could not read your location. Drag the pin on the map instead.');
+        toast.error('Could not read your location. Drag the pin on the map instead.');
       },
       { enableHighAccuracy: true, timeout: 12_000 }
     );
@@ -84,16 +81,10 @@ export default function AddressMapPicker({
 
   const askConfirm = () => {
     if (lat == null || lng == null) {
-      window.alert('Drag the pin to your place first, then confirm the address.');
+      toast.error('Drag the pin to your place first, then confirm the address.');
       return;
     }
-    const ok = confirmDeliveryAddress(address, lat, lng);
-    onChange({
-      address,
-      lat,
-      lng,
-      confirmed: ok,
-    });
+    setConfirmOpen(true);
   };
 
   return (
@@ -172,6 +163,19 @@ export default function AddressMapPicker({
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
         {confirmed ? 'Address confirmed' : 'Confirm address'}
       </button>
+      {lat != null && lng != null ? (
+        <ConfirmAddressDialog
+          open={confirmOpen}
+          address={address}
+          lat={lat}
+          lng={lng}
+          onConfirm={() => {
+            setConfirmOpen(false);
+            onChange({ address, lat, lng, confirmed: true });
+          }}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

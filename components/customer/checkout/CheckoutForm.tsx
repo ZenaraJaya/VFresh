@@ -221,9 +221,6 @@ export default function CheckoutForm() {
     }
 
     if (!pin || !addressConfirmed) {
-      window.alert(
-        'Locate the pin on the map and tap Confirm address so the rider can find you.'
-      );
       toast.error('Confirm the delivery pin and address');
       return;
     }

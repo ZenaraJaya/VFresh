@@ -58,9 +58,6 @@ export default function AccountSetupForm({
       return;
     }
     if (!pin || !addressConfirmed) {
-      window.alert(
-        'Locate the pin on the map and tap Confirm address so we can save the right place.'
-      );
       toast.error('Confirm the delivery pin and address');
       return;
     }
