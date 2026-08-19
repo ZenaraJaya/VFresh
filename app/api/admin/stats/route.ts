@@ -39,7 +39,15 @@ export async function GET() {
       prisma.order.findMany({
         take: 8,
         orderBy: { createdAt: 'desc' },
-        include: { company: { select: { id: true, name: true } } }
+        select: {
+          id: true,
+          orderNumber: true,
+          employeeName: true,
+          status: true,
+          total: true,
+          createdAt: true,
+          company: { select: { id: true, name: true } }
+        }
       }),
       prisma.order.findMany({
         where: { createdAt: { gte: since }, status: { not: 'CANCELLED' } },
