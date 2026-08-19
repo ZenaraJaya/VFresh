@@ -36,6 +36,7 @@ export default function AccountSetupForm({
   const [billingPostcode, setBillingPostcode] = useState('');
   const [billingState, setBillingState] = useState('Sarawak');
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [addressConfirmed, setAddressConfirmed] = useState(false);
   const [cardholderName, setCardholderName] = useState(defaultName ?? '');
   const [cardNumber, setCardNumber] = useState('');
   const [cardBrand, setCardBrand] = useState('');
@@ -54,6 +55,13 @@ export default function AccountSetupForm({
     e.preventDefault();
     if (!billingAddress.trim()) {
       toast.error('Add a delivery / billing address');
+      return;
+    }
+    if (!pin || !addressConfirmed) {
+      window.alert(
+        'Locate the pin on the map and tap Confirm address so we can save the right place.'
+      );
+      toast.error('Confirm the delivery pin and address');
       return;
     }
     const digits = cardNumber.replace(/\s/g, '');
@@ -131,8 +139,10 @@ export default function AccountSetupForm({
             address={billingAddress}
             lat={pin?.lat}
             lng={pin?.lng}
-            onChange={({ address, lat, lng }) => {
+            confirmed={addressConfirmed}
+            onChange={({ address, lat, lng, confirmed }) => {
               setPin({ lat, lng });
+              setAddressConfirmed(confirmed);
               if (address) setBillingAddress(address);
             }}
           />

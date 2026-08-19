@@ -24,6 +24,22 @@ export function formatCoords(lat?: number | null, lng?: number | null) {
   return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 }
 
+/** Browser confirm so the shopper signs off on the pin + written address. */
+export function confirmDeliveryAddress(address: string, lat?: number | null, lng?: number | null) {
+  const pin = formatCoords(lat, lng);
+  const body = [
+    'Please confirm this delivery address.',
+    '',
+    address.trim() || 'Add the floor and unit in the address field.',
+    pin ? `\nPin: ${pin}` : '',
+    '',
+    'The rider will navigate to this pin.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+  return window.confirm(body);
+}
+
 export type GeoHit = {
   lat: number;
   lng: number;

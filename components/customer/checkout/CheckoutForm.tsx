@@ -79,6 +79,7 @@ export default function CheckoutForm() {
     useState<PaymentMethod>('CREDIT_CARD');
   const [submitting, setSubmitting] = useState(false);
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [addressConfirmed, setAddressConfirmed] = useState(false);
 
   const {
     register,
@@ -216,6 +217,14 @@ export default function CheckoutForm() {
 
     if (values.repeatWeekly && !values.employeeEmail?.trim()) {
       toast.error('Add your email so you can stop the weekly order later');
+      return;
+    }
+
+    if (!pin || !addressConfirmed) {
+      window.alert(
+        'Locate the pin on the map and tap Confirm address so the rider can find you.'
+      );
+      toast.error('Confirm the delivery pin and address');
       return;
     }
 
@@ -404,8 +413,10 @@ export default function CheckoutForm() {
               address={watch('deliveryLocation')}
               lat={pin?.lat}
               lng={pin?.lng}
-              onChange={({ address, lat, lng }) => {
+              confirmed={addressConfirmed}
+              onChange={({ address, lat, lng, confirmed }) => {
                 setPin({ lat, lng });
+                setAddressConfirmed(confirmed);
                 if (address) setValue('deliveryLocation', address, { shouldValidate: true });
               }}
             />
