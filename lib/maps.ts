@@ -1,8 +1,11 @@
 /** Miri, Sarawak — default map centre. */
 export const MIRI_CENTER = { lat: 4.3995, lng: 113.9914 };
 
+/** How far the OSM embed is padded around the marker (degrees). */
+export const MAP_EMBED_DELTA = 0.008;
+
 export function mapsEmbedUrl(lat: number, lng: number, zoom = 16) {
-  const d = 0.008;
+  const d = MAP_EMBED_DELTA;
   return `https://www.openstreetmap.org/export/embed.html?bbox=${lng - d}%2C${lat - d}%2C${lng + d}%2C${lat + d}&layer=mapnik&marker=${lat}%2C${lng}`;
 }
 
