@@ -6,6 +6,7 @@ import { isValidPassword } from '@/lib/password-rules';
 import { USABLE_COMPANY_WHERE } from '@/lib/company';
 import { findActiveInvite } from '@/lib/company-invite';
 import { emailAlreadyUsed } from '@/lib/email-taken';
+import { isCustomerDemoEmail } from '@/lib/demo-accounts';
 
 const schema = z.object({
   name: z.string().min(1).max(120),
@@ -35,6 +36,13 @@ export async function POST(req: Request) {
     const email = parsed.data.email.toLowerCase().trim();
     const password = parsed.data.password;
     const jobTitle = nullIfBlank(parsed.data.jobTitle);
+
+    if (isCustomerDemoEmail(email)) {
+      return NextResponse.json(
+        { error: 'This email is reserved. Register with your own email.' },
+        { status: 400 }
+      );
+    }
 
     if (!isValidPassword(password)) {
       return NextResponse.json(

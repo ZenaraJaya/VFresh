@@ -11,6 +11,7 @@ import {
   isVendorOnLunchBreak,
 } from '@/lib/vendor-availability';
 import { assertSellableForCheckout } from '@/lib/daily-pack';
+import { releaseExpiredPaymentHolds } from '@/lib/payment-hold';
 import { newOrderNumber } from '@/lib/order-number';
 import { createStandingOrders } from '@/lib/standing-orders';
 import { isCompanyUsable } from '@/lib/company';
@@ -183,6 +184,12 @@ export async function POST(req: NextRequest) {
     }
 
     try {
+      await releaseExpiredPaymentHolds();
+    } catch (err) {
+      console.error('payment hold release', err);
+    }
+
+    try {
       await assertSellableForCheckout(data.items);
     } catch (err) {
       return NextResponse.json(
@@ -311,6 +318,12 @@ export async function GET(req: NextRequest) {
         { error: 'orderNumber is required' },
         { status: 400 }
       );
+    }
+
+    try {
+      await releaseExpiredPaymentHolds();
+    } catch (err) {
+      console.error('payment hold release', err);
     }
 
     const order = await prisma.order.findUnique({

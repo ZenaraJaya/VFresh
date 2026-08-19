@@ -30,11 +30,16 @@ const passwordByEmail = new Map(
   ])
 );
 
+export function isCustomerDemoEmail(email: string) {
+  return email.toLowerCase().trim() === DEMO_ACCOUNTS.customer.email;
+}
+
 export function demoPasswordForEmail(email: string) {
   return passwordByEmail.get(email.toLowerCase().trim()) ?? null;
 }
 
 export function isPublishedDemoPassword(email: string, password: string) {
+  if (isCustomerDemoEmail(email)) return false;
   const expected = demoPasswordForEmail(email);
   return Boolean(expected && password === expected);
 }

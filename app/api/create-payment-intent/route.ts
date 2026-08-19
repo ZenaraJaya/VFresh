@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
+import { releaseExpiredPaymentHolds } from '@/lib/payment-hold';
 
 const bodySchema = z.object({
   orderId: z.string().min(1)
@@ -26,6 +27,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
     }
 
+    await releaseExpiredPaymentHolds();
+
     const order = await prisma.order.findUnique({
       where: { id: parsed.data.orderId }
     });
@@ -36,6 +39,15 @@ export async function POST(req: NextRequest) {
     if (order.paymentStatus === 'PAID') {
       return NextResponse.json(
         { error: 'Order is already paid' },
+        { status: 409 }
+      );
+    }
+    if (order.status === 'CANCELLED') {
+      return NextResponse.json(
+        {
+          error:
+            'This order was cancelled because payment was not completed within 1 hour. Please order again.',
+        },
         { status: 409 }
       );
     }

@@ -73,15 +73,19 @@ export default function MenuCard({
   return (
     <Link
       href={`/menu/${item.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white transition hover:shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
+      className={`group flex flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white transition dark:border-neutral-800 dark:bg-neutral-900 ${
+        canAdd
+          ? 'hover:shadow-lg'
+          : 'opacity-70 grayscale'
+      }`}
     >
       <div className="relative h-44 bg-neutral-100 dark:bg-neutral-800">
         {item.image && (
           <SafeImage
             src={item.image}
             alt={item.name}
-            className={`h-full w-full object-cover transition duration-300 group-hover:scale-105 ${
-              !canAdd ? 'opacity-70 grayscale' : ''
+            className={`h-full w-full object-cover transition duration-300 ${
+              canAdd ? 'group-hover:scale-105' : ''
             }`}
           />
         )}
@@ -128,6 +132,11 @@ export default function MenuCard({
               {item.vendor.businessName}
             </p>
           </div>
+        )}
+        {soldOut && accepting && (
+          <p className="mb-3 text-xs font-medium text-neutral-500">
+            Sold out
+          </p>
         )}
         {item.remainingQty != null && item.remainingQty > 0 && (
           <p className="mb-2 text-xs font-medium text-emerald-700">

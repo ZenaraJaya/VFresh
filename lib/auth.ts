@@ -3,7 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/db';
 import { authSecret, ensureAuthUrl } from '@/lib/auth-env';
 import { findCourierByEmail, findCourierById } from '@/lib/courier-lookup';
-import { credentialValue } from '@/lib/demo-accounts';
+import { credentialValue, isCustomerDemoEmail } from '@/lib/demo-accounts';
 import { verifyStoredOrDemoPassword } from '@/lib/demo-password';
 import { SESSION_IDLE_SECONDS } from '@/lib/session-idle';
 
@@ -40,6 +40,8 @@ export const authOptions: NextAuthOptions = {
           : String(credentials.password);
 
         if (!email || !password) return null;
+
+        if (isCustomerDemoEmail(email)) return null;
 
         const admin = await prisma.admin.findUnique({ where: { email } });
         if (admin) {

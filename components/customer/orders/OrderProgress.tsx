@@ -1,7 +1,7 @@
 'use client';
 
 import { Check } from 'lucide-react';
-import { useOrderLive } from '@/lib/use-order-live';
+import { PAYMENT_HOLD_EXPIRED, paymentHoldCustomerMessage } from '@/lib/payment-hold';
 
 const STEPS = [
   { key: 'PENDING', label: 'Receive' },
@@ -26,20 +26,25 @@ export default function OrderProgress({
   orderNumber,
   initialStatus,
   initialStockDeducted = false,
+  initialCancelReason = null,
 }: {
   orderNumber: string;
   initialStatus: string;
   initialStockDeducted?: boolean;
+  initialCancelReason?: string | null;
 }) {
-  const { status } = useOrderLive(orderNumber, {
+  const { status, cancelReason } = useOrderLive(orderNumber, {
     status: initialStatus,
     stockDeducted: initialStockDeducted,
+    cancelReason: initialCancelReason,
   });
 
   if (status === 'CANCELLED') {
     return (
       <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-        This order was cancelled.
+        {cancelReason === PAYMENT_HOLD_EXPIRED
+          ? paymentHoldCustomerMessage(orderNumber)
+          : 'This order was cancelled.'}
       </p>
     );
   }

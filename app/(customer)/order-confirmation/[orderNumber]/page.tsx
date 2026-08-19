@@ -41,6 +41,14 @@ export default async function OrderConfirmationPage({
         <p className="mt-4 inline-block max-w-full break-all rounded-xl bg-neutral-100 px-3 py-2 font-mono text-sm font-semibold sm:px-4 sm:text-lg dark:bg-neutral-800">
           {order.orderNumber}
         </p>
+        {order.paymentMethod === 'CREDIT_CARD' &&
+        order.paymentStatus !== 'PAID' &&
+        order.status !== 'CANCELLED' ? (
+          <p className="mx-auto mt-4 max-w-md rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            These dishes are held for 1 hour. Complete payment in that time or
+            the order is cancelled and they go back on the menu.
+          </p>
+        ) : null}
         {order.courierName && (
           <p className="mt-3 text-sm font-medium text-emerald-800 dark:text-emerald-300">
             Rider: {order.courierName}
@@ -59,6 +67,7 @@ export default async function OrderConfirmationPage({
           orderNumber={order.orderNumber}
           initialStatus={order.status}
           initialStockDeducted={order.stockDeducted}
+          initialCancelReason={order.cancelReason}
         />
       </div>
 
@@ -97,7 +106,9 @@ export default async function OrderConfirmationPage({
             <li className="text-neutral-600 dark:text-neutral-400">
               {order.paymentMethod === 'COMPANY_ACCOUNT'
                 ? "Added to this month's invoice"
-                : 'Paid by card'}
+                : order.paymentStatus === 'PAID'
+                  ? 'Paid by card'
+                  : 'Card — complete payment within 1 hour to keep this order'}
             </li>
           </ul>
         </div>

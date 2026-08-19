@@ -20,8 +20,8 @@ export type OrderLiveSnap = {
   deliveryDate?: string;
   deliveryTime?: string | null;
   dueAt?: string | null;
-  late?: boolean;
-};
+      cancelReason?: string | null;
+      paymentStatus?: string | null;
 
 type Entry = {
   listeners: Set<(snap: OrderLiveSnap) => void>;
@@ -57,6 +57,8 @@ async function pull(orderNumber: string) {
     deliveryTime: data.deliveryTime ?? null,
     dueAt: data.track?.dueAt ?? null,
     late: Boolean(data.track?.late),
+    cancelReason: data.cancelReason ?? null,
+    paymentStatus: data.paymentStatus ?? null,
   };
   if (!snap.dueAt && snap.deliveryDate) {
     const track = deliveryTrackPayload({

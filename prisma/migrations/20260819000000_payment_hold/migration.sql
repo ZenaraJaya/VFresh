@@ -1,0 +1,2 @@
+ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "cancelReason" TEXT;
+ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "customerAlertSeenAt" TIMESTAMP(3);

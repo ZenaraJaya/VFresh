@@ -467,9 +467,9 @@ export function sortVendorsOpenFirst<T extends VendorHours>(vendors: T[]): T[] {
   });
 }
 
-/** Menu from open vendors first; closed-vendor dishes go last. */
+/** Menu from open vendors first; closed or sold-out dishes go last. */
 export function sortMenuOpenFirst<
-  T extends { vendor?: VendorHours | null },
+  T extends { vendor?: VendorHours | null; remainingQty?: number | null },
 >(items: T[]): T[] {
   return [...items].sort((a, b) => {
     const aOpen = a.vendor
@@ -478,8 +478,10 @@ export function sortMenuOpenFirst<
     const bOpen = b.vendor
       ? isVendorAcceptingOrders({ ...b.vendor, status: 'APPROVED' })
       : true;
-    if (aOpen === bOpen) return 0;
-    return aOpen ? -1 : 1;
+    if (aOpen !== bOpen) return aOpen ? -1 : 1;
+    const aSold = a.remainingQty === 0 ? 1 : 0;
+    const bSold = b.remainingQty === 0 ? 1 : 0;
+    return aSold - bSold;
   });
 }
 

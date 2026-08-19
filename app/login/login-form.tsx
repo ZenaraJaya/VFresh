@@ -8,7 +8,7 @@ import { ChevronRight, Leaf, Loader2, Lock, Mail, ShoppingBag, Store, Bike } fro
 import toast from 'react-hot-toast';
 import PasswordInput from '@/components/shared/ui/PasswordInput';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
-import { DEMO_ACCOUNTS, type DemoRole } from '@/lib/demo-accounts';
+import { DEMO_ACCOUNTS, isCustomerDemoEmail, type DemoRole } from '@/lib/demo-accounts';
 import { safeCallbackPath } from '@/lib/safe-callback';
 import { homeForRole } from '@/lib/home-for-role';
 
@@ -31,6 +31,13 @@ export default function LoginForm() {
   const loginWith = async (emailValue: string, passwordValue: string) => {
     setSubmitting(true);
     setNotice(null);
+    if (isCustomerDemoEmail(emailValue)) {
+      setSubmitting(false);
+      toast.error(
+        'The customer demo cannot sign in. Register with your own email.'
+      );
+      return;
+    }
     const res = await signIn('credentials', {
       email: emailValue,
       password: passwordValue,
@@ -59,6 +66,12 @@ export default function LoginForm() {
       }
       if (hint.status === 'suspended') {
         setNotice('This vendor account is suspended. Email VFresh admin to appeal — you cannot register again.');
+        return;
+      }
+      if (hint.status === 'customer_demo_disabled') {
+        toast.error(
+          'The customer demo cannot sign in. Register with your own email.'
+        );
         return;
       }
       if (hint.status === 'unknown') {
@@ -195,8 +208,10 @@ export default function LoginForm() {
         <p className="text-center text-xs font-medium uppercase tracking-wide text-neutral-400">
           Demo accounts
         </p>
-        <div className="grid grid-cols-2 gap-1 rounded-xl bg-neutral-100 p-1 dark:bg-neutral-800 sm:grid-cols-4">
-          {(Object.keys(DEMO_ACCOUNTS) as RoleTab[]).map((key) => (
+        <div className="grid grid-cols-3 gap-1 rounded-xl bg-neutral-100 p-1 dark:bg-neutral-800">
+          {((Object.keys(DEMO_ACCOUNTS) as RoleTab[]).filter(
+            (key) => key !== 'customer'
+          )).map((key) => (
             <button
               key={key}
               type="button"

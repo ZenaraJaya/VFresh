@@ -37,6 +37,7 @@ export default async function MenuItemPage({
   if (!item || !item.available || (await isMenuRejected(id))) notFound();
 
   const [publicItem] = await withPublicPackQty([item]);
+  const soldOut = publicItem.remainingQty === 0;
 
   const related = await prisma.menuItem.findMany({
     where: await storefrontWhere({
@@ -67,7 +68,11 @@ export default async function MenuItemPage({
       </Link>
 
       <div className="grid gap-10 lg:grid-cols-2">
-        <div className="relative aspect-square overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+        <div
+          className={`relative aspect-square overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-800 ${
+            soldOut ? 'opacity-70 grayscale' : ''
+          }`}
+        >
           {item.image && (
             <SafeImage
               src={item.image}
@@ -75,6 +80,11 @@ export default async function MenuItemPage({
               className="h-full w-full object-cover"
             />
           )}
+          {soldOut ? (
+            <span className="absolute left-3 top-3 rounded-full bg-neutral-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+              Sold out
+            </span>
+          ) : null}
         </div>
 
         <div className="space-y-6">

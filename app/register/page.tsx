@@ -10,6 +10,7 @@ import PasswordInput from '@/components/shared/ui/PasswordInput';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
 import { safeCallbackPath } from '@/lib/safe-callback';
 import JobTitleField from '@/components/customer/account/JobTitleField';
+import AccountSetupModal from '@/components/customer/auth/AccountSetupModal';
 
 function RegisterForm() {
   const router = useRouter();
@@ -26,6 +27,7 @@ function RegisterForm() {
   const [inviteCompany, setInviteCompany] = useState<string | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
 
   useEffect(() => {
     if (!inviteToken) return;
@@ -102,9 +104,8 @@ function RegisterForm() {
         return;
       }
 
-      toast.success('Welcome to VFresh');
-      router.push(safeCallbackPath(searchParams.get('callbackUrl')) ?? '/account');
-      router.refresh();
+      toast.success('Welcome to VFresh — set payment and address');
+      setSetupOpen(true);
     } catch {
       toast.error('Could not create account');
     } finally {
@@ -116,6 +117,7 @@ function RegisterForm() {
     'w-full rounded-xl border border-neutral-200 bg-white py-2 pl-10 pr-4 outline-none focus:border-emerald-500 dark:border-neutral-700 dark:bg-neutral-950';
 
   return (
+    <>
     <form
       onSubmit={handleSubmit}
       className="w-full max-w-md space-y-5 rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
@@ -133,7 +135,7 @@ function RegisterForm() {
         <p className="text-sm text-neutral-500">
           {viaInvite
             ? `Register to handle orders and payments for ${inviteCompany}.`
-            : 'Your personal login. After this, register the company from Profile if you place office orders — an admin reviews it.'}
+            : 'Your personal login. Next you will set delivery address and payment. Register the company from Profile if you place office orders.'}
         </p>
       </div>
 
@@ -273,6 +275,19 @@ function RegisterForm() {
         </p>
       </div>
     </form>
+    <AccountSetupModal
+      open={setupOpen}
+      defaultName={name}
+      defaultEmail={email}
+      onComplete={() => {
+        setSetupOpen(false);
+        router.push(
+          safeCallbackPath(searchParams.get('callbackUrl')) ?? '/account'
+        );
+        router.refresh();
+      }}
+    />
+    </>
   );
 }
 

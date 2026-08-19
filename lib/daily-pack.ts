@@ -2,11 +2,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { sellableQty } from '@/lib/daily-pack-qty';
 import { delayProofOk, requireDelayIfLate, type DeliveryClockOrder } from '@/lib/delivery-sla';
-
-const OPEN_ORDER = {
-  status: { not: 'CANCELLED' as const },
-  stockDeducted: false,
-};
+import { activeStockHoldWhere, releaseExpiredPaymentHolds } from '@/lib/payment-hold';
 
 export async function reservedQtyByMenuItem(menuItemIds: string[]) {
   const reserved = new Map<string, number>();
@@ -16,7 +12,7 @@ export async function reservedQtyByMenuItem(menuItemIds: string[]) {
     by: ['menuItemId'],
     where: {
       menuItemId: { in: menuItemIds },
-      order: OPEN_ORDER,
+      order: activeStockHoldWhere(),
     },
     _sum: { quantity: true },
   });
@@ -30,6 +26,11 @@ export async function reservedQtyByMenuItem(menuItemIds: string[]) {
 export async function withPublicPackQty<
   T extends { id: string; remainingQty: number | null },
 >(items: T[]): Promise<(T & { remainingQty: number | null })[]> {
+  try {
+    await releaseExpiredPaymentHolds();
+  } catch (err) {
+    console.error('payment hold release', err);
+  }
   const reserved = await reservedQtyByMenuItem(items.map((i) => i.id));
   return items.map((item) => ({
     ...item,

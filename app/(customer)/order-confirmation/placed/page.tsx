@@ -35,6 +35,17 @@ export default async function OrdersPlacedPage({
         <p className="mt-2 text-neutral-600 dark:text-neutral-400">
           Each kitchen has its own order ID. Save these numbers.
         </p>
+        {orders.some(
+          (order) =>
+            order.paymentMethod === 'CREDIT_CARD' &&
+            order.paymentStatus !== 'PAID' &&
+            order.status !== 'CANCELLED'
+        ) ? (
+          <p className="mx-auto mt-4 max-w-md rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            Card orders hold leftover packs for 1 hour. Pay in that time or we
+            cancel the order and put the dishes back on the menu.
+          </p>
+        ) : null}
       </div>
 
       {orders.length === 0 ? (

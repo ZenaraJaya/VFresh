@@ -242,6 +242,10 @@ model Order {
   paymentMethod       PaymentMethod @default(COMPANY_ACCOUNT)
   paymentStatus       PaymentStatus @default(PENDING)
   paidAt              DateTime?
+  /// Why the order was cancelled (e.g. PAYMENT_HOLD_EXPIRED).
+  cancelReason        String?
+  /// Customer has seen the unpaid-hold expiry notice.
+  customerAlertSeenAt DateTime?
   /// True after leftover packs were deducted (customer/vendor Receive).
   stockDeducted       Boolean       @default(false)
   /// Rider marked On the way / picked up.
