@@ -20,8 +20,10 @@ export type OrderLiveSnap = {
   deliveryDate?: string;
   deliveryTime?: string | null;
   dueAt?: string | null;
-      cancelReason?: string | null;
-      paymentStatus?: string | null;
+  late?: boolean;
+  cancelReason?: string | null;
+  paymentStatus?: string | null;
+};
 
 type Entry = {
   listeners: Set<(snap: OrderLiveSnap) => void>;

@@ -1,7 +1,8 @@
 'use client';
 
 import { Check } from 'lucide-react';
-import { PAYMENT_HOLD_EXPIRED, paymentHoldCustomerMessage } from '@/lib/payment-hold';
+import { useOrderLive } from '@/lib/use-order-live';
+import { PAYMENT_HOLD_EXPIRED, paymentHoldCustomerMessage } from '@/lib/payment-hold-copy';
 
 const STEPS = [
   { key: 'PENDING', label: 'Receive' },

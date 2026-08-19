@@ -1,9 +1,17 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { sendEmail } from '@/lib/email';
+import {
+  PAYMENT_HOLD_EXPIRED,
+  PAYMENT_HOLD_MS,
+  paymentHoldCustomerMessage,
+} from '@/lib/payment-hold-copy';
 
-export const PAYMENT_HOLD_MS = 60 * 60 * 1000;
-export const PAYMENT_HOLD_EXPIRED = 'PAYMENT_HOLD_EXPIRED';
+export {
+  PAYMENT_HOLD_EXPIRED,
+  PAYMENT_HOLD_MS,
+  paymentHoldCustomerMessage,
+};
 
 export function paymentHoldCutoff(now = new Date()) {
   return new Date(now.getTime() - PAYMENT_HOLD_MS);
@@ -37,10 +45,6 @@ export function unpaidCardHoldExpiredWhere(
     paidAt: null,
     createdAt: { lt: paymentHoldCutoff(now) },
   };
-}
-
-export function paymentHoldCustomerMessage(orderNumber: string) {
-  return `Your order ${orderNumber} was cancelled because payment was not completed within 1 hour. Those dishes are back on the menu — order them again if you still want them, or pick something else.`;
 }
 
 function holdEmail(orderNumber: string, name?: string | null) {
