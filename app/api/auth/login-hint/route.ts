@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { findCourierByEmail } from '@/lib/courier-lookup';
-import { isCustomerDemoEmail } from '@/lib/demo-accounts';
 
 const schema = z.object({
   email: z.email(),
@@ -15,10 +14,6 @@ export async function POST(req: Request) {
   }
 
   const email = parsed.data.email.toLowerCase().trim();
-  if (isCustomerDemoEmail(email)) {
-    return NextResponse.json({ status: 'customer_demo_disabled' });
-  }
-
   const vendor = await prisma.vendor.findUnique({
     where: { email },
     select: { status: true },

@@ -39,7 +39,6 @@ export function demoPasswordForEmail(email: string) {
 }
 
 export function isPublishedDemoPassword(email: string, password: string) {
-  if (isCustomerDemoEmail(email)) return false;
   const expected = demoPasswordForEmail(email);
   return Boolean(expected && password === expected);
 }

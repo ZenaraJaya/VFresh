@@ -3,8 +3,9 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/db';
 import { authSecret, ensureAuthUrl } from '@/lib/auth-env';
 import { findCourierByEmail, findCourierById } from '@/lib/courier-lookup';
-import { credentialValue, isCustomerDemoEmail } from '@/lib/demo-accounts';
+import { credentialValue } from '@/lib/demo-accounts';
 import { verifyStoredOrDemoPassword } from '@/lib/demo-password';
+import { ensurePublishedDemoCustomer } from '@/lib/ensure-demo-customer';
 import { SESSION_IDLE_SECONDS } from '@/lib/session-idle';
 
 ensureAuthUrl();
@@ -35,13 +36,20 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials.password) return null;
 
         const email = credentialValue(credentials.email).toLowerCase();
-        const password = Array.isArray(credentials.password)
-          ? String(credentials.password[0] ?? '')
-          : String(credentials.password);
+        const password = credentialValue(credentials.password);
 
         if (!email || !password) return null;
 
-        if (isCustomerDemoEmail(email)) return null;
+        const demoCustomer = await ensurePublishedDemoCustomer(email, password);
+        if (demoCustomer) {
+          return {
+            id: demoCustomer.id,
+            email: demoCustomer.email,
+            name: demoCustomer.name ?? demoCustomer.email,
+            role: 'CUSTOMER',
+            companyId: demoCustomer.companyId ?? undefined,
+          };
+        }
 
         const admin = await prisma.admin.findUnique({ where: { email } });
         if (admin) {
@@ -101,7 +109,16 @@ export const authOptions: NextAuthOptions = {
           };
         }
 
-        const customer = await prisma.customer.findUnique({ where: { email } });
+        const customer = await prisma.customer.findUnique({
+          where: { email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            password: true,
+            companyId: true,
+          },
+        });
         if (!customer) return null;
 
         const ok = await verifyStoredOrDemoPassword(

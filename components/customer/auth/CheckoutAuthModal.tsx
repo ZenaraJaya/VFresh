@@ -8,7 +8,7 @@ import { Leaf, Loader2, Lock, Mail, User, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PasswordInput from '@/components/shared/ui/PasswordInput';
 import RequiredMark from '@/components/shared/ui/RequiredMark';
-import { isCustomerDemoEmail } from '@/lib/demo-accounts';
+import { DEMO_ACCOUNTS } from '@/lib/demo-accounts';
 import { lockBodyScroll } from '@/lib/body-scroll-lock';
 import AccountSetupForm from './AccountSetupForm';
 
@@ -82,10 +82,6 @@ export default function CheckoutAuthModal({
   };
 
   const loginWith = async (emailValue: string, passwordValue: string) => {
-    if (isCustomerDemoEmail(emailValue)) {
-      toast.error('The customer demo cannot sign in. Register with your own email.');
-      return false;
-    }
     const res = await signIn('credentials', {
       email: emailValue,
       password: passwordValue,
@@ -290,6 +286,45 @@ export default function CheckoutAuthModal({
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
               {mode === 'login' ? 'Sign in' : 'Create account'}
             </button>
+
+            {mode === 'login' ? (
+              <div className="space-y-2 pt-1">
+                <p className="text-center text-xs font-medium uppercase tracking-wide text-neutral-400">
+                  Demo account
+                </p>
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => {
+                    const demo = DEMO_ACCOUNTS.customer;
+                    setEmail(demo.email);
+                    setPassword(demo.password);
+                    void (async () => {
+                      setSubmitting(true);
+                      try {
+                        const ok = await loginWith(demo.email, demo.password);
+                        if (ok) {
+                          toast.success('Welcome back');
+                          finish();
+                        }
+                      } catch {
+                        toast.error('Could not sign in');
+                      } finally {
+                        setSubmitting(false);
+                      }
+                    })();
+                  }}
+                  className="w-full rounded-xl bg-neutral-100 px-3 py-2 text-sm font-semibold text-neutral-600 transition hover:bg-neutral-200 disabled:opacity-60 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                >
+                  {submitting
+                    ? 'Signing you in…'
+                    : `Use ${DEMO_ACCOUNTS.customer.label} demo`}
+                </button>
+                <p className="text-center text-[11px] text-neutral-500">
+                  {DEMO_ACCOUNTS.customer.email}
+                </p>
+              </div>
+            ) : null}
           </form>
         )}
       </div>
