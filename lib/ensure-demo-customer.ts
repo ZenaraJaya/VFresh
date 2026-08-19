@@ -1,7 +1,12 @@
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'node:crypto';
 import { prisma } from '@/lib/db';
-import { USABLE_COMPANY_WHERE } from '@/lib/company';
 import { DEMO_ACCOUNTS, isPublishedDemoPassword } from '@/lib/demo-accounts';
+import { findCustomerAuthByEmail } from '@/lib/auth-lookups';
+
+function newCustomerId() {
+  return `c${randomBytes(12).toString('hex')}`;
+}
 
 /** Upsert the published customer demo so cart checkout can always sign in. */
 export async function ensurePublishedDemoCustomer(
@@ -11,37 +16,27 @@ export async function ensurePublishedDemoCustomer(
   if (!isPublishedDemoPassword(email, password)) return null;
 
   const hash = await bcrypt.hash(password, 10);
-  let companyId: string | undefined;
+  const name = DEMO_ACCOUNTS.customer.label;
+
   try {
-    const company = await prisma.company.findFirst({
-      where: USABLE_COMPANY_WHERE,
-      select: { id: true },
-      orderBy: { name: 'asc' },
-    });
-    companyId = company?.id;
+    const updated = await prisma.$executeRaw`
+      UPDATE customers
+      SET password = ${hash}, name = ${name}, "updatedAt" = NOW()
+      WHERE lower(email) = ${email}
+    `;
+    if (updated === 0) {
+      const id = newCustomerId();
+      await prisma.$executeRaw`
+        INSERT INTO customers (
+          id, email, password, name, "paymentMethod", "companyRole", cart, "createdAt", "updatedAt"
+        ) VALUES (
+          ${id}, ${email}, ${hash}, ${name}, 'CREDIT_CARD', 'STAFF', '[]'::jsonb, NOW(), NOW()
+        )
+      `;
+    }
   } catch (error) {
-    console.error('Demo customer company lookup failed', error);
+    console.error('Demo customer upsert failed', error);
   }
 
-  return prisma.customer.upsert({
-    where: { email },
-    update: {
-      password: hash,
-      name: DEMO_ACCOUNTS.customer.label,
-      ...(companyId && { companyId }),
-    },
-    create: {
-      email,
-      name: DEMO_ACCOUNTS.customer.label,
-      password: hash,
-      paymentMethod: 'CREDIT_CARD',
-      ...(companyId ? { companyId, companyRole: 'STAFF' as const } : {}),
-    },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      companyId: true,
-    },
-  });
+  return findCustomerAuthByEmail(email);
 }

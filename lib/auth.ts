@@ -2,6 +2,12 @@ import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/db';
 import { authSecret, ensureAuthUrl } from '@/lib/auth-env';
+import {
+  findAdminAuthByEmail,
+  findCustomerAuthByEmail,
+  findVendorAuthByEmail,
+  persistPasswordHash,
+} from '@/lib/auth-lookups';
 import { findCourierByEmail, findCourierById } from '@/lib/courier-lookup';
 import { credentialValue } from '@/lib/demo-accounts';
 import { verifyStoredOrDemoPassword } from '@/lib/demo-password';
@@ -40,25 +46,28 @@ export const authOptions: NextAuthOptions = {
 
         if (!email || !password) return null;
 
-        const demoCustomer = await ensurePublishedDemoCustomer(email, password);
-        if (demoCustomer) {
-          return {
-            id: demoCustomer.id,
-            email: demoCustomer.email,
-            name: demoCustomer.name ?? demoCustomer.email,
-            role: 'CUSTOMER',
-            companyId: demoCustomer.companyId ?? undefined,
-          };
+        try {
+          const demoCustomer = await ensurePublishedDemoCustomer(email, password);
+          if (demoCustomer) {
+            return {
+              id: demoCustomer.id,
+              email: demoCustomer.email,
+              name: demoCustomer.name ?? demoCustomer.email,
+              role: 'CUSTOMER',
+              companyId: demoCustomer.companyId ?? undefined,
+            };
+          }
+        } catch (error) {
+          console.error('Demo customer sign-in failed', error);
         }
 
-        const admin = await prisma.admin.findUnique({ where: { email } });
+        const admin = await findAdminAuthByEmail(email);
         if (admin) {
           const ok = await verifyStoredOrDemoPassword(
             email,
             password,
             admin.password,
-            (password) =>
-              prisma.admin.update({ where: { id: admin.id }, data: { password } })
+            (next) => persistPasswordHash('admins', admin.id, next)
           );
           if (!ok) return null;
           return {
@@ -69,14 +78,31 @@ export const authOptions: NextAuthOptions = {
           };
         }
 
-        const vendor = await prisma.vendor.findUnique({ where: { email } });
+        const customer = await findCustomerAuthByEmail(email);
+        if (customer) {
+          const ok = await verifyStoredOrDemoPassword(
+            email,
+            password,
+            customer.password,
+            (next) => persistPasswordHash('customers', customer.id, next)
+          );
+          if (!ok) return null;
+          return {
+            id: customer.id,
+            email: customer.email,
+            name: customer.name ?? customer.email,
+            role: 'CUSTOMER',
+            companyId: customer.companyId ?? undefined,
+          };
+        }
+
+        const vendor = await findVendorAuthByEmail(email);
         if (vendor) {
           const ok = await verifyStoredOrDemoPassword(
             email,
             password,
             vendor.password,
-            (password) =>
-              prisma.vendor.update({ where: { id: vendor.id }, data: { password } })
+            (next) => persistPasswordHash('vendors', vendor.id, next)
           );
           if (!ok) return null;
           return {
@@ -94,11 +120,7 @@ export const authOptions: NextAuthOptions = {
             email,
             password,
             courier.password,
-            (password) =>
-              prisma.courier.update({
-                where: { id: courier.id },
-                data: { password },
-              })
+            (next) => persistPasswordHash('couriers', courier.id, next)
           );
           if (!ok) return null;
           return {
@@ -109,37 +131,7 @@ export const authOptions: NextAuthOptions = {
           };
         }
 
-        const customer = await prisma.customer.findUnique({
-          where: { email },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            password: true,
-            companyId: true,
-          },
-        });
-        if (!customer) return null;
-
-        const ok = await verifyStoredOrDemoPassword(
-          email,
-          password,
-          customer.password,
-          (password) =>
-            prisma.customer.update({
-              where: { id: customer.id },
-              data: { password },
-            })
-        );
-        if (!ok) return null;
-
-        return {
-          id: customer.id,
-          email: customer.email,
-          name: customer.name ?? customer.email,
-          role: 'CUSTOMER',
-          companyId: customer.companyId ?? undefined,
-        };
+        return null;
         } catch (error) {
           console.error('Sign-in failed', error);
           return null;
